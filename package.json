@@ -1,0 +1,7 @@
+{
+  "type": "module",
+  "dependencies": {
+    "@google/genai": "^1.37.0",
+    "dotenv": "^17.2.3"
+  }
+}
