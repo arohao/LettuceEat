@@ -84,7 +84,7 @@ async function main() {
     const foodType = foodTypeInput.trim() || "Local Cuisine";
     const maxWords = Number.parseInt(maxWordsInput, 10);
     const safeMaxWords =
-      Number.isFinite(maxWords) && maxWords > 0 ? maxWords : 50;
+      Number.isFinite(maxWords) && maxWords > 0 ? maxWords : 25;
 
     const prompt = buildPrompt({
       foodType,
