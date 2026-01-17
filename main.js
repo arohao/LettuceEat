@@ -6,28 +6,87 @@ import readline from "node:readline";
 const ai = new GoogleGenAI({});
 
 const restaurantDescriptions = {
-  "The Golden Fork":
-    "Cozy bistro with seasonal menus, candlelit tables, and a curated local wine list.",
-  "Harbor Grill":
-    "Seafood-forward spot with a breezy patio, fast service, and generous portions.",
-  "Spice Avenue":
-    "Bold, aromatic curries with customizable heat levels and plenty of vegetarian options.",
-  "Stone Oven Pizzeria":
-    "Neapolitan-style pies, blistered crusts, and a casual, family-friendly vibe.",
-  "Maple & Smoke":
-    "Slow-smoked meats, house-made sauces, and a rustic interior with live weekend music.",
-  "Garden Table":
-    "Farm-to-table plates, bright natural lighting, and a focus on fresh, local produce.",
-  "Noodle Lantern":
-    "Hand-pulled noodles, rich broths, and quick weekday lunch specials.",
-  "Saffron Lounge":
-    "Elegant decor, attentive service, and refined tasting menus for special occasions.",
+  "The Golden Fork": {
+    description:
+      "Cozy bistro with seasonal menus, candlelit tables, and a curated local wine list.",
+    reviews: [
+      "Warm, intimate atmosphere and attentive staff.",
+      "Food is consistently excellent, but reservations are a must.",
+      "Great date-night spot with a strong wine pairing program.",
+    ],
+  },
+  "Harbor Grill": {
+    description:
+      "Seafood-forward spot with a breezy patio, fast service, and generous portions.",
+    reviews: [
+      "Fresh oysters and quick service, perfect for lunch.",
+      "Patio views are great, but it gets busy on weekends.",
+      "Big portions and fair prices for seafood lovers.",
+    ],
+  },
+  "Spice Avenue": {
+    description:
+      "Bold, aromatic curries with customizable heat levels and plenty of vegetarian options.",
+    reviews: [
+      "Complex flavors and great vegan choices.",
+      "Heat level can be intense, but staff will adjust it.",
+      "Aromatic dishes and generous spice blends.",
+    ],
+  },
+  "Stone Oven Pizzeria": {
+    description:
+      "Neapolitan-style pies, blistered crusts, and a casual, family-friendly vibe.",
+    reviews: [
+      "Crust is perfectly charred and airy.",
+      "Kids loved it; service was friendly and fast.",
+      "Simple menu, executed well.",
+    ],
+  },
+  "Maple & Smoke": {
+    description:
+      "Slow-smoked meats, house-made sauces, and a rustic interior with live weekend music.",
+    reviews: [
+      "Brisket is tender with a deep smoky flavor.",
+      "Lively vibe on weekends, sometimes a bit loud.",
+      "Sauces are outstanding and sides are hearty.",
+    ],
+  },
+  "Garden Table": {
+    description:
+      "Farm-to-table plates, bright natural lighting, and a focus on fresh, local produce.",
+    reviews: [
+      "Fresh ingredients and beautiful plating.",
+      "Light, clean flavors with seasonal variety.",
+      "Great for brunch; coffee is excellent.",
+    ],
+  },
+  "Noodle Lantern": {
+    description:
+      "Hand-pulled noodles, rich broths, and quick weekday lunch specials.",
+    reviews: [
+      "Broths are rich and noodles have great chew.",
+      "Fast service and solid value for lunch.",
+      "Small seating area but turnover is quick.",
+    ],
+  },
+  "Saffron Lounge": {
+    description:
+      "Elegant decor, attentive service, and refined tasting menus for special occasions.",
+    reviews: [
+      "Impeccable service and refined plating.",
+      "Tasting menu feels luxurious and well-paced.",
+      "Pricey, but excellent for celebrations.",
+    ],
+  },
 };
 
 function formatRestaurantData(data) {
   return Object.entries(data)
-    .map(([name, desc]) => `${name}: ${desc}`)
-    .join("\n");
+    .map(([name, info]) => {
+      const reviews = (info.reviews || []).map((r) => `- ${r}`).join("\n");
+      return `${name}: ${info.description}\nReviews:\n${reviews}`;
+    })
+    .join("\n\n");
 }
 
 function buildPrompt({ foodType, comparisonMetric, maxWords }) {
@@ -38,7 +97,7 @@ function buildPrompt({ foodType, comparisonMetric, maxWords }) {
   return `### ROLE
 You are a friendly, enthusiastic regional food reviewer specializing in ${foodType}. Your tone is helpful, inviting, and decisive.
 
-### DATA (Restaurant Descriptions)
+### DATA (Restaurant Descriptions + Reviews)
 ${formatRestaurantData(restaurantDescriptions)}
 
 ### USER REQUEST
