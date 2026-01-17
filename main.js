@@ -78,7 +78,7 @@ async function main() {
     );
     const maxWordsInput = await askQuestion(
       rl,
-      "Max review words (default 50): ",
+      "Max review words (default 25): ",
     );
 
     const foodType = foodTypeInput.trim() || "Local Cuisine";
