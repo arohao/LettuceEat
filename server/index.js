@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 
-const API_KEY = "yc_live_oNRN2qnbv__Xur00GrtRWJ8tb8g0hiUc9QLrmE0WNgI=";
+const API_KEY = "yc_live_mEsSwSuS3eQKDolG5Qlp5JcSxfDkWXxXriBGw2iDvXY=";
 
 dotenv.config();
 
