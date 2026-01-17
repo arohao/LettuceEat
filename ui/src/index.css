@@ -1,0 +1,196 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 13%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 13%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 13%;
+
+    --primary: 145 63% 42%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 145 40% 94%;
+    --secondary-foreground: 145 63% 32%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 145 40% 94%;
+    --accent-foreground: 145 63% 32%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 145 63% 42%;
+
+    --radius: 1rem;
+
+    /* Custom colors for LettuceEat */
+    --lettuce-green: 145 63% 42%;
+    --lettuce-light: 145 40% 94%;
+    --lettuce-dark: 145 63% 32%;
+    --rating-gold: 45 93% 58%;
+    --rating-gold-bg: 45 93% 92%;
+    --invite-border: 199 89% 48%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 145 63% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 145 30% 15%;
+    --secondary-foreground: 145 40% 80%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 145 30% 15%;
+    --accent-foreground: 145 40% 80%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 145 63% 45%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-nunito antialiased;
+  }
+
+  html {
+    @apply scroll-smooth;
+  }
+}
+
+@layer components {
+  .card-restaurant {
+    @apply bg-card rounded-2xl overflow-hidden shadow-sm border border-border transition-all duration-200;
+  }
+
+  .card-restaurant:hover {
+    @apply shadow-md;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-primary-foreground font-semibold py-4 px-6 rounded-2xl w-full transition-all duration-200;
+  }
+
+  .btn-primary:hover {
+    @apply opacity-90;
+  }
+
+  .btn-primary:active {
+    @apply scale-[0.98];
+  }
+
+  .category-chip {
+    @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border;
+  }
+
+  .category-chip-active {
+    @apply bg-primary text-primary-foreground border-primary;
+  }
+
+  .category-chip-inactive {
+    @apply bg-background text-foreground border-border;
+  }
+
+  .rating-badge {
+    @apply inline-flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-semibold;
+    background: hsl(var(--rating-gold-bg));
+    color: hsl(var(--rating-gold));
+  }
+
+  .search-input {
+    @apply w-full bg-muted rounded-xl py-3 px-4 pl-12 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all;
+  }
+
+  .invite-card {
+    @apply border-2 rounded-2xl p-4;
+    border-color: hsl(var(--invite-border));
+  }
+
+  .nav-item {
+    @apply flex flex-col items-center gap-1 py-2 px-4 transition-colors duration-200;
+  }
+
+  .nav-item-active {
+    @apply text-primary;
+  }
+
+  .nav-item-inactive {
+    @apply text-muted-foreground;
+  }
+
+  .availability-cell {
+    @apply w-10 h-10 rounded-xl transition-all duration-200 cursor-pointer;
+  }
+
+  .availability-available {
+    @apply bg-primary;
+  }
+
+  .availability-partial {
+    @apply bg-secondary;
+  }
+
+  .availability-empty {
+    @apply bg-muted border border-border;
+  }
+}
+
+@layer utilities {
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .mobile-container {
+    @apply max-w-md mx-auto min-h-screen bg-background;
+  }
+}
