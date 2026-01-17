@@ -114,6 +114,7 @@ async function main() {
           foodType,
           comparisonMetric: comparisonInput?.trim() || null,
           maxWords: safeMaxWords,
+          friendMessage: "",
         }),
       },
     );
