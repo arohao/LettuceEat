@@ -76,6 +76,10 @@ async function main() {
       rl,
       "Comparison criteria (optional, press Enter to skip): ",
     );
+    const friendMessageInput = await askQuestion(
+      rl,
+      "Friend message (optional, press Enter to skip): ",
+    );
     const maxWordsInput = await askQuestion(
       rl,
       "Max review words (default 25): ",
@@ -114,7 +118,7 @@ async function main() {
           foodType,
           comparisonMetric: comparisonInput?.trim() || null,
           maxWords: safeMaxWords,
-          friendMessage: "",
+          friendMessage: friendMessageInput?.trim() || null,
         }),
       },
     );
