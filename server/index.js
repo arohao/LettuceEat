@@ -268,7 +268,7 @@ app.post("/review", async (req, res) => {
   try {
     console.log("[Review] Calling Gemini API...");
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
     });
 
@@ -352,7 +352,7 @@ Instructions:
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", // Updated to valid model name
+      model: "gemini-2.5-flash-lite", // Updated to valid model name
       contents: prompt,
     });
 
@@ -472,7 +472,7 @@ Write only the overview text, no headings or labels.`;
   try {
     console.log("[Overview] Generating overview for:", name);
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
     });
 
@@ -511,7 +511,7 @@ Respond with ONLY the category name from the list above. If it doesn't fit any c
 
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
     });
 
@@ -592,7 +592,7 @@ Return ONLY valid JSON, no markdown, no code blocks, no additional text.`;
     console.log(`[Gemini] GEMINI_API_KEY exists: ${!!GEMINI_API_KEY}`);
     
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.5-flash-lite",
       contents: prompt,
     });
 
