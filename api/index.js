@@ -154,22 +154,42 @@ Plan focus: ${metricText}
 const app = express();
 
 // Configure CORS to allow frontend domain
+const allowedOrigins = [
+  'https://lettuceeat-six.vercel.app',
+  'http://localhost:5173', // Vite default port
+  'http://localhost:3000',
+  'http://localhost:5174',
+];
+
 const corsOptions = {
-  origin: [
-    'https://lettuceeat-six.vercel.app',
-    'http://localhost:5173', // Vite default port
-    'http://localhost:3000',
-    'http://localhost:5174',
-  ],
+  origin: true, // Allow all origins for now - we can restrict later
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'Accept'],
+  exposedHeaders: ['Content-Type'],
 };
 
+// Apply CORS middleware
 app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
+
+// Add CORS headers to all responses as fallback (for Vercel serverless functions)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  // Always set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, Accept');
+  
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 app.use(express.json());
 
