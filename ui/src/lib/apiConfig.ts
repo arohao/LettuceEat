@@ -13,7 +13,7 @@ const getApiUrl = (): string => {
   
   // Production: use Vercel backend
   if (import.meta.env.PROD) {
-    return "https://u-otta-hack8-pgnjt1uhq-arohas-projects.vercel.app";
+    return "https://u-otta-hack8-one.vercel.app";
   }
   
   // Development: use localhost

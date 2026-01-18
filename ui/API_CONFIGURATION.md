@@ -4,13 +4,13 @@
 The frontend now uses a centralized API configuration that connects to your Vercel backend.
 
 ## Backend URL
-Your backend is deployed at: `https://u-otta-hack8-pgnjt1uhq-arohas-projects.vercel.app/`
+Your backend is deployed at: `https://u-otta-hack8-one.vercel.app/`
 
 ## Configuration
 
 ### Automatic Configuration
 The code automatically uses:
-- **Production**: `https://u-otta-hack8-pgnjt1uhq-arohas-projects.vercel.app`
+- **Production**: `https://u-otta-hack8-one.vercel.app`
 - **Development**: `http://localhost:3000`
 
 ### Custom Configuration (Optional)
@@ -18,7 +18,7 @@ If you need to override the API URL, create or update `ui/.env`:
 
 ```env
 # For production (if you want to override)
-VITE_API_URL=https://u-otta-hack8-pgnjt1uhq-arohas-projects.vercel.app
+VITE_API_URL=https://u-otta-hack8-one.vercel.app
 
 # For local development (if your backend is on a different port)
 VITE_API_URL=http://localhost:3000
@@ -37,8 +37,8 @@ All API calls now use the centralized configuration:
 import { apiEndpoint } from "@/lib/apiConfig";
 
 // Instead of hardcoding URLs:
-fetch(apiEndpoint("review"))  // → https://u-otta-hack8.../review
-fetch(apiEndpoint("zapier/webhook"))  // → https://u-otta-hack8.../zapier/webhook
+fetch(apiEndpoint("review"))  // → https://u-otta-hack8-one.vercel.app/review
+fetch(apiEndpoint("zapier/webhook"))  // → https://u-otta-hack8-one.vercel.app/zapier/webhook
 ```
 
 ## Testing
