@@ -718,12 +718,12 @@ process.on("unhandledRejection", (reason, promise) => {
 });
 
 // Export for Vercel serverless functions
+// Vercel handles the server - DO NOT call app.listen() in serverless environment
 export default app;
 
-// For local development: start the server
-// Only start if not running as a Vercel serverless function
-const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
-if (!isVercel) {
+// For local development only: start the server
+// Only start if we're NOT on Vercel (Vercel sets VERCEL env variable)
+if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`[Server] Running on http://localhost:${PORT}`);
