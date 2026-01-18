@@ -415,6 +415,13 @@ Do NOT extract images or photos - skip image extraction to save time.`
         <div className="text-sm text-destructive">{error}</div>
       )}
 
+      {/* Loading message */}
+      {isLoading && (
+        <div className="text-center py-4 text-muted-foreground">
+          <p className="text-lg font-medium">Hold on, we're cooking up some spots for you...</p>
+        </div>
+      )}
+
       {/* Skeleton loader - only show when truly loading (no cache) */}
       <RestaurantSkeleton visible={isLoading} />
       <RestaurantSkeleton visible={isLoading} />
