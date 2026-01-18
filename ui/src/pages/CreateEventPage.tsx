@@ -38,8 +38,13 @@ export const CreateEventPage = () => {
       .filter((friend) => invitedFriends.includes(friend.id))
       .map((friend) => friend.name);
 
+      const API =
+      import.meta.env.PROD
+      ? "https://uottahack8.onrender.com"
+      : "http://localhost:3000";
+
     try {
-      const response = await fetch("http://localhost:3000/review", {
+      const response = await fetch(`${API}/review`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
