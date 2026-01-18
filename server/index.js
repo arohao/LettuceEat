@@ -167,9 +167,9 @@ app.get("/extract", async (req, res) => {
 
   try {
     const stream = await extractStream(url, prompt);
-
+    const decoder = new TextDecoder();
     for await (const chunk of stream) {
-      console.log("Sending chunk:", chunk);
+      console.log("Sending chunk:", decoder.decode(chunk));
       res.write(chunk);
     }
     res.end();

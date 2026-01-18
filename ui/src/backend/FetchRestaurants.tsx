@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import type { Restaurant } from "@/data/mockData";
+import { RestaurantSkeleton} from "@/components/transition/RestaurantSkeleton";
 
 import sushiFallback from "@/assets/sushi-restaurant.jpg";
 
@@ -13,7 +14,7 @@ type Props = {
 // -------------------------------
 const mapBackendRestaurant = (r: any): Restaurant => ({
   id: crypto.randomUUID(),
-  name: r.name ?? "Unknown Restaurant",
+  name: r.restaurant_name ?? "Unknown Restaurant",
   address: r.address ?? "Address not available",
   priceRange: r.price ?? "$$",
   rating: typeof r.rating === "number" ? r.rating : 4.0,
@@ -90,24 +91,26 @@ export const RestaurantFetcher: React.FC<Props> = ({
   // -------------------------------
   // Render
   // -------------------------------
-  return (
+ const isLoading = restaurants.length === 0 && !error;
+
+return (
     <div className="space-y-4">
       {error && (
         <div className="text-sm text-destructive">{error}</div>
       )}
 
+      {/* Skeleton loader */}
+      <RestaurantSkeleton visible={isLoading} />
+      <RestaurantSkeleton visible={isLoading} />
+      <RestaurantSkeleton visible={isLoading} />
+
+      {/* Live streamed cards */}
       {restaurants.map((restaurant) => (
         <RestaurantCard
           key={restaurant.id}
           restaurant={restaurant}
         />
       ))}
-
-      {restaurants.length === 0 && !error && (
-        <div className="text-sm text-muted-foreground">
-          Loading restaurants…
-        </div>
-      )}
     </div>
-  );
+    );
 };
