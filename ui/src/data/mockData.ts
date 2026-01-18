@@ -164,7 +164,7 @@ export const negativeReviews: string[] = [
 
 export const friends: Friend[] = [
   { id: "1", name: "Aroha Upreti", email: "uaroha@gmail.com" },
-  { id: "2", name: "Kelly Huang", email: "khuian87@outlook.com" },
+  { id: "2", name: "Kelly Huang", email: "kelly.xinhuang20@gmail.com" },
   { id: "3", name: "Ahmad Soboh", email: "sobohahmad777@gmail.com" },
   { id: "4", name: "Guarav", email: "guarav@email.com" },
   { id: "5", name: "Jane Doe", email: "jane@email.com" },

@@ -1,11 +1,14 @@
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Restaurant, positiveReviews, negativeReviews } from "@/data/mockData";
 import { Smile, Frown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { RestaurantImage } from "./RestaurantImage";
+import { apiEndpoint } from "@/lib/apiConfig";
 
 interface ComparisonDialogProps {
   open: boolean;
@@ -198,6 +201,12 @@ export const ComparisonDialog = ({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-md mx-auto p-0 rounded-t-3xl border-0 fixed bottom-0 top-auto translate-y-0 data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom">
+                <DialogTitle className="sr-only">
+                    {loading ? "Comparing..." : "What reviewers are saying..."}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                    Comparison of reviews between {currentRestaurant.name} and {compareRestaurant.name}
+                </DialogDescription>
                 <div className="p-6 pt-8">
                     <h2 className="text-xl font-bold text-foreground text-center mb-6">
                         {loading ? "Comparing..." : "What reviewers are saying..."}
