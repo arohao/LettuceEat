@@ -8,8 +8,10 @@ import {
   setCachedRestaurants,
   isCacheFresh,
 } from "@/lib/restaurantCache";
-
-import sushiFallback from "@/assets/sushi-restaurant.jpg";
+import {
+  getRestaurantImage,
+  getRestaurantMenuImages,
+} from "@/lib/imageUtils";
 
 type Props = {
   foodType?: string;
@@ -30,6 +32,7 @@ function generateRestaurantId(name: string, address: string): string {
 const mapBackendRestaurant = (r: any): Restaurant => {
   const name = r.restaurant_name ?? "Unknown Restaurant";
   const address = r.address ?? "Address not available";
+  const category = r.cuisine ?? "Other";
   
   return {
     id: generateRestaurantId(name, address),
@@ -37,11 +40,11 @@ const mapBackendRestaurant = (r: any): Restaurant => {
     address,
     priceRange: r.price ?? "$$",
     rating: typeof r.rating === "number" ? r.rating : 4.0,
-    category: r.cuisine ?? "Other",
-    image: r.imageUrl ?? sushiFallback,
-    menuImages: Array.isArray(r.photos) && r.photos.length > 0
-      ? r.photos
-      : [sushiFallback],
+    category,
+    // Use utility function to get image with category-based fallback
+    image: getRestaurantImage(r.imageUrl, category),
+    // Use utility function to get menu images with category-based fallback
+    menuImages: getRestaurantMenuImages(r.photos, category),
   };
 };
 
@@ -105,7 +108,7 @@ export const RestaurantFetcher: React.FC<Props> = ({
   }, [foodType]);
 
   // -------------------------------
-  // Start SSE stream
+  // Start hybrid fetch: Gemini first, then YellowCake enrichment
   // -------------------------------
   const startStream = useCallback(() => {
     // Close any existing stream and clear timeouts
@@ -113,182 +116,247 @@ export const RestaurantFetcher: React.FC<Props> = ({
     if (fetchTimeoutRef.current) {
       clearTimeout(fetchTimeoutRef.current);
     }
+    if (cacheUpdateTimeoutRef.current) {
+      clearTimeout(cacheUpdateTimeoutRef.current);
+    }
     setError(null);
     hasReceivedDataRef.current = false;
 
-    // Check cache first
+    // Check cache first - PRIORITY: avoid API calls if cache is fresh
     const cached = getCachedRestaurants(foodType);
+    
+    // If cache exists and is fresh (less than 1 hour old), skip ALL API calls to save credits
     if (cached && cached.length > 0) {
+      const cacheIsFresh = isCacheFresh(foodType, 3600000); // 1 hour (3600000ms)
+      if (cacheIsFresh) {
+        console.log(`[Cache] ✓ "${foodType}" is fresh (< 1hr), using cache only - SKIPPING Gemini & YellowCake API calls`);
+        setRestaurants(cached);
+        setIsLoadingFromCache(false);
+        hasReceivedDataRef.current = true;
+        return; // Exit early - don't call ANY APIs (saves credits)
+      }
+      
+      // Cache exists but is stale - show it immediately, then revalidate in background
+      console.log(`[Cache] "${foodType}" exists but is stale (> 1hr), showing cache and revalidating in background`);
       setRestaurants(cached);
       setIsLoadingFromCache(false);
-      hasReceivedDataRef.current = true; // Cache counts as received data
-      
-      // If cache is fresh (less than 5 minutes old), skip fetching entirely
-      const cacheIsFresh = isCacheFresh(foodType, 300000);
-      if (cacheIsFresh) {
-        console.log(`[Cache] "${foodType}" is fresh (< 5min), skipping fetch`);
-        return; // Don't start SSE stream - exit early
-      }
-      console.log(`[Cache] "${foodType}" exists but is stale, revalidating in background`);
-      // For stale cache, keep showing it but allow new data to replace it
-      // Don't clear restaurants - let new data append/replace as it arrives
+      hasReceivedDataRef.current = true;
+      // Continue to fetch new data below to update the cache
     } else {
-      console.log(`[Cache] No cache for "${foodType}", fetching from API`);
+      console.log(`[Cache] No cache for "${foodType}", fetching from Gemini & YellowCake APIs`);
       setRestaurants([]);
       setIsLoadingFromCache(false);
     }
 
     // Only reach here if we need to fetch (no cache or stale cache)
-    console.log(`[Fetch] Starting SSE stream for "${foodType}"`);
-    const url = encodeURIComponent(
-      `https://www.google.com/maps/search/${foodType}+in+ottawa/`
-    );
+    console.log(`[Hybrid Fetch] Starting API calls for "${foodType}"`);
+    
+    // Step 1: Get fast results from Gemini (2-5 seconds)
+    const fetchGeminiResults = async () => {
+      try {
+        console.log(`[Gemini] Fetching restaurant list for "${foodType}"...`);
+        const response = await fetch(
+          `http://localhost:3000/restaurants/gemini?foodType=${encodeURIComponent(foodType)}&location=Ottawa`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Gemini fetch failed: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        if (data.restaurants && Array.isArray(data.restaurants)) {
+          console.log(`[Gemini] ✓ Got ${data.restaurants.length} restaurants quickly`);
+          
+          // Map Gemini results to our format
+          const geminiRestaurants = data.restaurants.map((r: any) => mapBackendRestaurant(r));
+          
+          // Show Gemini results immediately
+          setRestaurants((prev) => {
+            // Merge with existing (avoid duplicates by ID)
+            const existingIds = new Set(prev.map((r) => r.id));
+            const newRestaurants = geminiRestaurants.filter((r) => !existingIds.has(r.id));
+            const merged = [...prev, ...newRestaurants];
+            
+            // Save to cache immediately
+            const currentFoodType = foodTypeRef.current;
+            try {
+              setCachedRestaurants(currentFoodType, merged);
+              console.log(`[Cache] ✓ Saved ${merged.length} restaurants (from Gemini)`);
+            } catch (cacheErr) {
+              console.error("[Cache] ✗ Error saving cache:", cacheErr);
+            }
+            
+            return merged;
+          });
+          
+          setIsLoadingFromCache(false);
+          hasReceivedDataRef.current = true;
+        }
+      } catch (err) {
+        console.error("[Gemini] Error fetching restaurants:", err);
+        // Don't set error - we'll still try YellowCake
+      }
+    };
 
-    const prompt = encodeURIComponent(
-      `Extract restaurant details for ${foodType} in Ottawa: name, address, rating, price, cuisine, photos`
-    );
+    // Step 2: Start YellowCake scraping in parallel for enrichment
+    // NOTE: This will only run if cache is missing or stale (> 1 hour old)
+    const startYellowCakeScraping = () => {
+      console.log(`[YellowCake] 💰 API CALL: Starting enrichment scraping for "${foodType}"...`);
+      const API =
+        import.meta.env.PROD
+          ? "https://uottahack8.onrender.com"
+          : "http://localhost:3000";
+      const url = encodeURIComponent(
+        `https://www.google.com/maps/search/${foodType}+in+ottawa/`
+      );
 
-    const es = new EventSource(
-      `http://localhost:3000/extract?url=${url}&prompt=${prompt}`
-    );
+      const prompt = encodeURIComponent(
+        `Extract restaurant details for ${foodType} in Ottawa. For each restaurant, provide:
+- name (exact restaurant name)
+- address (full street address)
+- rating (numeric rating out of 5)
+- price (price range: $, $$, $$$, or $$$$)
+- cuisine (cuisine type)
 
-    eventSourceRef.current = es;
+Do NOT extract images or photos - skip image extraction to save time.`
+      );
+
+      const es = new EventSource(
+        `${API}/extract?url=${url}&prompt=${prompt}`
+      );
+
+      eventSourceRef.current = es;
 
     // Log connection status
     es.onopen = () => {
       console.log(`[SSE] Connection opened for "${foodType}"`);
     };
 
-    // Set a timeout to detect if no data arrives (2 minutes - scraper can take 40-60 seconds)
-    // Only timeout if we haven't received ANY data at all
-    fetchTimeoutRef.current = setTimeout(() => {
-      // Check current state using refs
-      if (!hasReceivedDataRef.current) {
-        console.warn("[Timeout] No data received after 2 minutes, using mock restaurants");
-        es.close();
-        setRestaurants((current) => {
-          if (current.length === 0) {
-            const mockData = getFilteredMockRestaurants();
-            if (mockData.length > 0) {
-              setIsLoadingFromCache(false);
-              setError("Unable to fetch restaurants. Showing sample data.");
-              return mockData;
+      // Set a timeout to detect if no data arrives (2 minutes - scraper can take 40-60 seconds)
+      // Only timeout if we haven't received ANY data at all
+      fetchTimeoutRef.current = setTimeout(() => {
+        // Check current state using refs
+        if (!hasReceivedDataRef.current) {
+          console.warn("[YellowCake Timeout] No data received after 2 minutes");
+          es.close();
+          setRestaurants((current) => {
+            if (current.length === 0) {
+              const mockData = getFilteredMockRestaurants();
+              if (mockData.length > 0) {
+                setIsLoadingFromCache(false);
+                setError("Unable to fetch restaurants. Showing sample data.");
+                return mockData;
+              }
             }
-          }
-          return current;
-        });
-      } else {
-        console.log("[Timeout] Data was received, timeout cleared");
-      }
-    }, 120000); // 2 minutes (120 seconds) - enough time for scraper to complete
- 
-    // Handle all SSE events
-    const handleRestaurantData = (event: MessageEvent) => {
-      console.log(`[SSE] Received data:`, event.type, event.data?.substring(0, 100));
-      
-      try {
-        const raw = JSON.parse(event.data);
-        const mapped = mapBackendRestaurant(raw);
-        console.log(`[SSE] Parsed restaurant:`, mapped.name);
-
-        setRestaurants((prev) => {
-          // Check if restaurant already exists (by ID)
-          const existingIndex = prev.findIndex((r) => r.id === mapped.id);
-          
-          let updated: Restaurant[];
-          if (existingIndex >= 0) {
-            // Replace existing restaurant with updated data
-            updated = [...prev];
-            updated[existingIndex] = mapped;
-            console.log(`[Update] Replacing existing restaurant: ${mapped.name}`);
-          } else {
-            // Add new restaurant
-            updated = [...prev, mapped];
-            console.log(`[Add] New restaurant: ${mapped.name} (total: ${updated.length})`);
-          }
-          
-          // Save to cache immediately using the current foodType
-          // Use ref to ensure we have the latest foodType value
-          const currentFoodType = foodTypeRef.current;
-          try {
-            setCachedRestaurants(currentFoodType, updated);
-            console.log(`[Cache] ✓ Saved ${updated.length} restaurants for "${currentFoodType}"`);
-          } catch (cacheErr) {
-            console.error("[Cache] ✗ Error saving cache:", cacheErr);
-          }
-          
-          // Also update debounced cache for efficiency
-          updateCache(updated);
-          setIsLoadingFromCache(false);
-          
-          // Clear timeout on first data - we know connection works now
-          // Stream will stay open to receive more restaurants until server closes it
-          const wasFirstData = !hasReceivedDataRef.current;
-          hasReceivedDataRef.current = true;
-          
-          if (wasFirstData && fetchTimeoutRef.current) {
-            clearTimeout(fetchTimeoutRef.current);
-            fetchTimeoutRef.current = null;
-            console.log("[SSE] First data received, timeout cleared - stream will stay open for more data");
-          }
-          
-          return updated;
-        });
-      } catch (err) {
-        console.error("[SSE] Error parsing chunk:", err, "Data:", event.data?.substring(0, 200));
-      }
-    };
-
-    // Listen for both "chunk" and "message" events (SSE defaults to "message" if no event type)
-    es.addEventListener("chunk", handleRestaurantData);
-    es.addEventListener("message", handleRestaurantData);
-    
-    // Optional progress updates
-    es.addEventListener("progress", (event) => {
-      console.log("[Progress]:", event.data);
-    });
-
-    es.onerror = (err) => {
-      console.error("[SSE] Error:", err);
-      console.log("[SSE] ReadyState:", es.readyState); // 0=CONNECTING, 1=OPEN, 2=CLOSED
-      
-      // If stream is closed, it might have completed successfully
-      if (es.readyState === EventSource.CLOSED) {
-        console.log("[SSE] Stream closed - fetch completed");
-        if (fetchTimeoutRef.current) {
-          clearTimeout(fetchTimeoutRef.current);
+            return current;
+          });
+        } else {
+          console.log("[YellowCake Timeout] Data was received, timeout cleared");
         }
-        setIsLoadingFromCache(false);
-        return;
-      }
-      
-      // Otherwise, it's an actual error
-      es.close();
-      
-      // Clear timeout
-      if (fetchTimeoutRef.current) {
-        clearTimeout(fetchTimeoutRef.current);
-      }
-      
-      setIsLoadingFromCache(false);
-      
-      // If no restaurants were loaded (no cache and no data), use mock data
-      // Check state after a brief delay to ensure state has settled
-      setTimeout(() => {
-        setRestaurants((current) => {
-          if (current.length === 0 && !hasReceivedDataRef.current) {
-            console.log("[Fallback] Using mock restaurants");
-            const mockData = getFilteredMockRestaurants();
-            if (mockData.length > 0) {
-              setIsLoadingFromCache(false);
-              setError("Unable to fetch restaurants. Showing sample data.");
-              return mockData;
+      }, 120000); // 2 minutes (120 seconds) - enough time for scraper to complete
+ 
+      // Handle all SSE events from YellowCake (enrichment data)
+      const handleRestaurantData = (event: MessageEvent) => {
+        console.log(`[YellowCake] Received data:`, event.type, event.data?.substring(0, 100));
+        
+        try {
+          const raw = JSON.parse(event.data);
+          const mapped = mapBackendRestaurant(raw);
+          console.log(`[YellowCake] Parsed restaurant:`, mapped.name);
+
+          setRestaurants((prev) => {
+            // Check if restaurant already exists (by ID) - merge/enrich data
+            const existingIndex = prev.findIndex((r) => r.id === mapped.id);
+            
+            let updated: Restaurant[];
+            if (existingIndex >= 0) {
+              // Enrich existing restaurant with YellowCake data (photos, ratings, etc.)
+              const existing = prev[existingIndex];
+              updated = [...prev];
+              updated[existingIndex] = {
+                ...existing,
+                ...mapped,
+                // Keep existing images (we're not extracting images from YellowCake anymore)
+                image: existing.image,
+                menuImages: existing.menuImages,
+                // Prefer YellowCake data for ratings/prices if available
+                rating: mapped.rating || existing.rating,
+                priceRange: mapped.priceRange || existing.priceRange,
+              };
+              console.log(`[Enrich] Enriched restaurant with YellowCake data: ${mapped.name}`);
+            } else {
+              // Add new restaurant from YellowCake
+              updated = [...prev, mapped];
+              console.log(`[Add] New restaurant from YellowCake: ${mapped.name} (total: ${updated.length})`);
             }
-          }
-          return current;
-        });
-      }, 100);
+            
+            // Save to cache immediately using the current foodType
+            const currentFoodType = foodTypeRef.current;
+            try {
+              setCachedRestaurants(currentFoodType, updated);
+              console.log(`[Cache] ✓ Saved ${updated.length} restaurants for "${currentFoodType}"`);
+            } catch (cacheErr) {
+              console.error("[Cache] ✗ Error saving cache:", cacheErr);
+            }
+            
+            // Also update debounced cache for efficiency
+            updateCache(updated);
+            setIsLoadingFromCache(false);
+            
+            // Clear timeout on first data - we know connection works now
+            const wasFirstData = !hasReceivedDataRef.current;
+            hasReceivedDataRef.current = true;
+            
+            if (wasFirstData && fetchTimeoutRef.current) {
+              clearTimeout(fetchTimeoutRef.current);
+              fetchTimeoutRef.current = null;
+              console.log("[YellowCake] First data received, timeout cleared");
+            }
+            
+            return updated;
+          });
+        } catch (err) {
+          console.error("[YellowCake] Error parsing chunk:", err, "Data:", event.data?.substring(0, 200));
+        }
+      };
+
+      // Listen for both "chunk" and "message" events (SSE defaults to "message" if no event type)
+      es.addEventListener("chunk", handleRestaurantData);
+      es.addEventListener("message", handleRestaurantData);
+      
+      // Optional progress updates
+      es.addEventListener("progress", (event) => {
+        console.log("[YellowCake Progress]:", event.data);
+      });
+
+      es.onerror = (err) => {
+        console.error("[YellowCake] Error:", err);
+        console.log("[YellowCake] ReadyState:", es.readyState); // 0=CONNECTING, 1=OPEN, 2=CLOSED
+      
+        // SSE connections can close normally (readyState 2 = CLOSED)
+        // Only treat as error if we haven't received any data AND connection closed unexpectedly
+        if (es.readyState === EventSource.CLOSED && !hasReceivedDataRef.current) {
+          console.warn("[YellowCake] Connection closed without receiving data");
+          
+          // Only show error/fallback if we have no restaurants at all
+          setRestaurants((current) => {
+            if (current.length === 0) {
+              const mockData = getFilteredMockRestaurants();
+              if (mockData.length > 0) {
+                setIsLoadingFromCache(false);
+                setError("Unable to fetch restaurants. Showing sample data.");
+                return mockData;
+              }
+            }
+            return current;
+          });
+        }
+      };
     };
+
+    // Start both in parallel: Gemini for fast results, YellowCake for enrichment
+    fetchGeminiResults();
+    startYellowCakeScraping();
   }, [foodType, updateCache, getFilteredMockRestaurants]);
 
   // Start on mount

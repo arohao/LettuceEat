@@ -188,6 +188,66 @@ export function getRestaurantById(id: string): Restaurant | null {
 }
 
 /**
+ * Gets all cached restaurants from all cache entries
+ * Returns an array of all unique restaurants across all caches
+ */
+export function getAllCachedRestaurants(): Restaurant[] {
+  try {
+    const allRestaurants: Restaurant[] = [];
+    const seenIds = new Set<string>();
+    
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(CACHE_PREFIX)) {
+        try {
+          const cached = localStorage.getItem(key);
+          if (cached) {
+            const entry: CacheEntry = JSON.parse(cached);
+            if (isCacheValid(entry.timestamp)) {
+              entry.restaurants.forEach((restaurant) => {
+                if (!seenIds.has(restaurant.id)) {
+                  seenIds.add(restaurant.id);
+                  allRestaurants.push(restaurant);
+                }
+              });
+            }
+          }
+        } catch {
+          continue;
+        }
+      }
+    }
+    return allRestaurants;
+  } catch (error) {
+    console.warn("Failed to get all cached restaurants:", error);
+    return [];
+  }
+}
+
+/**
+ * Gets all restaurants by category from cache and mock data
+ * Combines cached restaurants with mock restaurants, filtering by category
+ */
+export function getRestaurantsByCategory(category: string, mockRestaurants: Restaurant[]): Restaurant[] {
+  const cached = getAllCachedRestaurants();
+  const cachedByCategory = cached.filter((r) => r.category === category);
+  const mockByCategory = mockRestaurants.filter((r) => r.category === category);
+  
+  // Combine and deduplicate by ID
+  const seenIds = new Set<string>();
+  const combined: Restaurant[] = [];
+  
+  [...cachedByCategory, ...mockByCategory].forEach((restaurant) => {
+    if (!seenIds.has(restaurant.id)) {
+      seenIds.add(restaurant.id);
+      combined.push(restaurant);
+    }
+  });
+  
+  return combined;
+}
+
+/**
  * Clears all expired caches
  * Useful for periodic cleanup
  */

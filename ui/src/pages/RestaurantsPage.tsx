@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapPin } from "lucide-react";
 import lettuceLogo from "@/assets/lettuce-logo.png";
 import { SearchBar } from "@/components/SearchBar";
@@ -7,10 +7,31 @@ import { RestaurantCard } from "@/components/RestaurantCard";
 import { restaurants } from "@/data/mockData";
 import { RestaurantFetcher } from "@/backend/FetchRestaurants";
 
+const SELECTED_CATEGORY_KEY = "selected_category";
+
 export const RestaurantsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
-  const [foodType, setFoodType] = useState("restaurants");
+  // Load category from localStorage on mount
+  const [selectedCategory, setSelectedCategory] = useState(() => {
+    try {
+      return localStorage.getItem(SELECTED_CATEGORY_KEY) || "All";
+    } catch {
+      return "All";
+    }
+  });
+  const [foodType, setFoodType] = useState(() => {
+    const saved = localStorage.getItem(SELECTED_CATEGORY_KEY) || "All";
+    return saved === "All" ? "restaurants" : saved;
+  });
+  
+  // Save category to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(SELECTED_CATEGORY_KEY, selectedCategory);
+    } catch (error) {
+      console.warn("Failed to save category to localStorage:", error);
+    }
+  }, [selectedCategory]);
   
   // Update foodType when category changes (skip "All")
   const handleCategorySelect = (category: string) => {

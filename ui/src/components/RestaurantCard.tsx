@@ -1,6 +1,7 @@
 import { Star, MapPin } from "lucide-react";
 import { Restaurant } from "@/data/mockData";
 import { useNavigate } from "react-router-dom";
+import { RestaurantImage } from "./RestaurantImage";
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
@@ -15,9 +16,10 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
       onClick={() => navigate(`/restaurant/${restaurant.id}`)}
     >
       <div className="aspect-[16/10] overflow-hidden">
-        <img
+        <RestaurantImage
           src={restaurant.image}
           alt={restaurant.name}
+          category={restaurant.category}
           className="w-full h-full object-cover"
         />
       </div>
@@ -33,7 +35,7 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
           </div>
           <div className="rating-badge">
             <Star size={14} fill="currentColor" />
-            <span>{restaurant.rating}</span>
+            <span>{typeof restaurant.rating === "number" ? restaurant.rating.toFixed(1) : "4.0"}</span>
           </div>
         </div>
         <span className="text-foreground font-medium text-sm mt-3 block ml-auto hover:text-primary transition-colors">

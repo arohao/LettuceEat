@@ -2,9 +2,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Star, MapPin } from "lucide-react";
 import { Header } from "@/components/Header";
-import { restaurants, getSimilarRestaurants } from "@/data/mockData";
-import { getRestaurantById } from "@/lib/restaurantCache";
+import { restaurants as mockRestaurants } from "@/data/mockData";
+import { getRestaurantById, getRestaurantsByCategory } from "@/lib/restaurantCache";
 import { ComparisonDialog } from "@/components/ComparisonDialog";
+import { RestaurantImage } from "@/components/RestaurantImage";
 import type { Restaurant } from "@/data/mockData";
 
 export const RestaurantDetailPage = () => {
@@ -28,7 +29,7 @@ export const RestaurantDetailPage = () => {
     }
     
     // Fall back to mock data
-    const mockRestaurant = restaurants.find((r) => r.id === id);
+    const mockRestaurant = mockRestaurants.find((r) => r.id === id);
     setRestaurant(mockRestaurant || null);
   }, [id]);
   
@@ -44,7 +45,9 @@ export const RestaurantDetailPage = () => {
     );
   }
   
-  const similarRestaurants = getSimilarRestaurants(restaurant.id, restaurant.category);
+  // Get all restaurants in the same category, excluding the current one
+  const allCategoryRestaurants = getRestaurantsByCategory(restaurant.category, mockRestaurants);
+  const similarRestaurants = allCategoryRestaurants.filter((r) => r.id !== restaurant.id);
 
   return (
     <div className="mobile-container pb-32">
@@ -52,9 +55,10 @@ export const RestaurantDetailPage = () => {
       
       <div className="px-4">
         <div className="rounded-2xl overflow-hidden mb-4">
-          <img
+          <RestaurantImage
             src={restaurant.image}
             alt={restaurant.name}
+            category={restaurant.category}
             className="w-full aspect-[16/10] object-cover"
           />
         </div>
@@ -70,7 +74,7 @@ export const RestaurantDetailPage = () => {
           </div>
           <div className="rating-badge">
             <Star size={14} fill="currentColor" />
-            <span>{restaurant.rating}</span>
+            <span>{typeof restaurant.rating === "number" ? restaurant.rating.toFixed(1) : "4.0"}</span>
           </div>
         </div>
         
@@ -78,10 +82,11 @@ export const RestaurantDetailPage = () => {
           <h2 className="font-bold text-foreground mb-4">Explore Menu</h2>
           <div className="flex gap-3 overflow-x-auto pb-2">
             {restaurant.menuImages.map((image, index) => (
-              <img
+              <RestaurantImage
                 key={index}
                 src={image}
                 alt={`Menu item ${index + 1}`}
+                category={restaurant.category}
                 className="w-28 h-28 rounded-xl object-cover flex-shrink-0"
               />
             ))}
@@ -101,12 +106,13 @@ export const RestaurantDetailPage = () => {
                   }}
                   className="flex-shrink-0 text-left"
                 >
-                  <img
+                  <RestaurantImage
                     src={similar.image}
                     alt={similar.name}
+                    category={similar.category}
                     className="w-24 h-24 rounded-xl object-cover mb-2"
                   />
-                  <p className="text-sm font-medium text-foreground">{similar.name}</p>
+                  <span className="text-sm font-medium text-foreground block w-24 truncate">{similar.name}</span>
                 </button>
               ))}
             </div>

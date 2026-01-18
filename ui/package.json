@@ -13,8 +13,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@google/genai": "^1.37.0",
-    "dotenv": "^17.2.3",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -48,6 +48,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
+    "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
@@ -67,9 +68,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
-    "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",

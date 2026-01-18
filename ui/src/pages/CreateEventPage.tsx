@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
-import { categories, generateAvailability, friendAvailabilities, restaurants, friends } from "@/data/mockData";
+import { generateAvailability, friendAvailabilities, restaurants, friends } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { getRestaurantById } from "@/lib/restaurantCache";
 import type { Restaurant } from "@/data/mockData";
@@ -37,28 +37,20 @@ export const CreateEventPage = () => {
   
   const [eventName, setEventName] = useState("");
   const [message, setMessage] = useState("");
-  const [foodType, setFoodType] = useState("");
-  const [comparisonMetric, setComparisonMetric] = useState("overall best experience");
-  const [maxWords, setMaxWords] = useState("25");
   const [comparisonOutput, setComparisonOutput] = useState<string | null>(null);
-  const [isComparing, setIsComparing] = useState(false);
-  const [compareError, setCompareError] = useState<string | null>(null);
   const [selectedDateTime, setSelectedDateTime] = useState<string | undefined>();
   const [userAvailability] = useState(() => generateAvailability());
+  const [isSending, setIsSending] = useState(false);
 
-  const handleCompare = async () => {
-    setIsComparing(true);
-    setCompareError(null);
-    setComparisonOutput(null);
-
-    const parsedMaxWords = Number.parseInt(maxWords, 10);
-    const safeMaxWords = Number.isFinite(parsedMaxWords) && parsedMaxWords > 0 ? parsedMaxWords : 25;
-    const resolvedFoodType = foodType.trim() || restaurant?.category || "Local Cuisine";
+  const generateAIComparison = async (): Promise<string | null> => {
+    const resolvedFoodType = restaurant?.category || "Local Cuisine";
+    const comparisonMetric = "overall best experience";
+    const maxWords = 25;
     const invitedNames = friends
       .filter((friend) => invitedFriends.includes(friend.id))
       .map((friend) => friend.name);
 
-      const API =
+    const API =
       import.meta.env.PROD
       ? "https://uottahack8.onrender.com"
       : "http://localhost:3000";
@@ -71,8 +63,8 @@ export const CreateEventPage = () => {
         },
         body: JSON.stringify({
           foodType: resolvedFoodType,
-          comparisonMetric: comparisonMetric.trim(),
-          maxWords: safeMaxWords,
+          comparisonMetric: comparisonMetric,
+          maxWords: maxWords,
           eventName: eventName.trim() || null,
           restaurantName: restaurant?.name || null,
           dateTime: selectedDateTime || null,
@@ -82,16 +74,31 @@ export const CreateEventPage = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Compare request failed");
+        // Try to get error details from the response
+        let errorMessage = "Compare request failed";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = `Request failed with status ${response.status}`;
+        }
+        console.error("[AI Comparison] Error response:", {
+          status: response.status,
+          statusText: response.statusText,
+          errorMessage,
+        });
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      setComparisonOutput(data?.text || "No review returned.");
+      return data?.text || "No review returned.";
     } catch (error) {
-      console.error(error);
-      setCompareError("Unable to compare restaurants right now.");
-    } finally {
-      setIsComparing(false);
+      console.error("[AI Comparison] Request error:", error);
+      // Re-throw with more context if it's not already an Error
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error("Unable to generate plan right now. Please check your connection and try again.");
     }
   };
 
@@ -113,55 +120,107 @@ export const CreateEventPage = () => {
       return;
     }
 
-    const selectedEmails = invitedEmails.length
-      ? invitedEmails
-      : friends
-          .filter((friend) => invitedFriends.includes(friend.id))
-          .map((friend) => friend.email);
+    setIsSending(true);
 
     try {
-      console.log("Calling Zapier webhook for invites", {
+      // Automatically generate AI message
+      let aiOutput = comparisonOutput;
+      if (!aiOutput) {
+        try {
+          aiOutput = await generateAIComparison();
+          setComparisonOutput(aiOutput);
+        } catch (error) {
+          setIsSending(false);
+          toast({
+            title: "Failed to generate plan",
+            description: "Please try again",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      const selectedEmails = invitedEmails.length
+        ? invitedEmails
+        : friends
+            .filter((friend) => invitedFriends.includes(friend.id))
+            .map((friend) => friend.email);
+
+      const resolvedFoodType = restaurant?.category || "Local Cuisine";
+      const friendMessageText = message.trim() || "";
+      const restaurantName = restaurant?.name || "";
+      const restaurantRating = restaurant?.rating 
+        ? (typeof restaurant.rating === 'number' ? restaurant.rating.toFixed(1) : String(restaurant.rating))
+        : "";
+      
+      // Structure the payload to match the Python code's expected format
+      // The Python code expects: raw_output (JSON string) -> raw_body (JSON string) -> actual fields
+      // Ensure all values are strings (not null) to avoid Python NoteType errors
+      const innerPayload = {
+        output: aiOutput || "",
+        foodType: resolvedFoodType || "",
+        friend_message: friendMessageText,
+      };
+      
+      const outerPayload = {
+        raw_body: JSON.stringify(innerPayload),
+      };
+      
+      const webhookPayload = {
+        raw_output: JSON.stringify(outerPayload),
         emails: selectedEmails,
-        eventName: eventName.trim(),
-        restaurant: restaurant?.name || null,
-        dateTime: selectedDateTime,
-        friendMessage: message.trim() || null,
-        comparisonOutput,
-        foodType: (foodType.trim() || restaurant?.category || "Local Cuisine"),
-        comparisonMetric: comparisonMetric.trim(),
-        maxWords: Number.parseInt(maxWords, 10) || 25,
+        eventName: eventName.trim() || "",
+        restaurant: restaurantName,
+        restaurantRating: restaurantRating, // Add restaurant rating
+        dateTime: selectedDateTime || "",
+        friendMessage: friendMessageText,
+        output: aiOutput || "",
+        foodType: resolvedFoodType || "",
+        comparisonMetric: "overall best experience",
+        maxWords: "25", // Convert to string for Python
+      };
+      
+      // Debug logging to verify all fields are present
+      console.log("Calling Zapier webhook for invites", {
+        ...webhookPayload,
+        restaurantValue: restaurantName,
+        restaurantLength: restaurantName.length,
+        friendMessageValue: friendMessageText,
+        friendMessageLength: friendMessageText.length,
       });
-      const zapierResponse = await fetch(
-        "https://hooks.zapier.com/hooks/catch/21189459/ugpnbit/",
-        {
-          method: "POST",
-          mode: "no-cors",
-          body: JSON.stringify({
-            emails: selectedEmails,
-            eventName: eventName.trim(),
-            restaurant: restaurant?.name || null,
-            dateTime: selectedDateTime,
-            friendMessage: message.trim() || null,
-            output: comparisonOutput,
-            foodType: (foodType.trim() || restaurant?.category || "Local Cuisine"),
-            comparisonMetric: comparisonMetric.trim() || null,
-            maxWords: Number.parseInt(maxWords, 10) || 25,
-          }),
+      
+      // Use backend proxy to avoid CORS issues
+      const API = import.meta.env.PROD
+        ? "https://uottahack8.onrender.com"
+        : "http://localhost:3000";
+      
+      const zapierResponse = await fetch(`${API}/zapier/webhook`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      );
-      console.log("Zapier webhook response (opaque)", {
-        type: zapierResponse.type,
+        body: JSON.stringify(webhookPayload),
       });
+      
+      const responseData = await zapierResponse.json();
+      console.log("Zapier webhook response", responseData);
+
+      toast({
+        title: "Invites sent! 🎉",
+        description: `Your event "${eventName.trim()}" at ${restaurant?.name} has been created!`,
+      });
+      
+      navigate("/");
     } catch (error) {
       console.error("Zapier webhook failed", error);
+      toast({
+        title: "Failed to send invites",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
     }
-
-    toast({
-      title: "Invites sent! 🎉",
-      description: `Your event "${eventName.trim()}" at ${restaurant?.name} has been created!`,
-    });
-    
-    navigate("/");
   };
 
   return (
@@ -195,68 +254,6 @@ export const CreateEventPage = () => {
           />
         </div>
 
-        <div className="border-t border-border pt-6">
-          <h2 className="font-bold text-foreground mb-4">Create Plan</h2>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Food type
-              </label>
-              <select
-                value={foodType || restaurant?.category || "Local Cuisine"}
-                onChange={(e) => setFoodType(e.target.value)}
-                className="w-full bg-muted rounded-xl py-2.5 px-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-              >
-                <option value="Local Cuisine">Local Cuisine</option>
-                {categories
-                  .filter((category) => category !== "All")
-                  .map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Plan focus
-              </label>
-              <input
-                type="text"
-                value={comparisonMetric}
-                onChange={(e) => setComparisonMetric(e.target.value)}
-                className="w-full bg-muted rounded-xl py-2.5 px-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-                placeholder="overall best experience"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Max words
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={maxWords}
-                onChange={(e) => setMaxWords(e.target.value)}
-                className="w-full bg-muted rounded-xl py-2.5 px-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </div>
-            <button
-              onClick={handleCompare}
-              className="btn-primary"
-              disabled={isComparing}
-            >
-              {isComparing ? "Creating plan..." : "Create Plan"}
-            </button>
-            {compareError && (
-              <p className="text-sm text-destructive">{compareError}</p>
-            )}
-            {comparisonOutput && !compareError && (
-              <p className="text-sm text-muted-foreground">{comparisonOutput}</p>
-            )}
-          </div>
-        </div>
-
         <div>
           <label className="block font-semibold text-foreground mb-4">
             Check availabilities
@@ -276,8 +273,14 @@ export const CreateEventPage = () => {
 
       <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-gradient-to-t from-background via-background to-transparent pt-8">
         <div className="max-w-md mx-auto">
-          <button onClick={handleSendInvite} className="btn-primary">
-            Send Invite
+          <button 
+            onClick={handleSendInvite} 
+            className="btn-primary"
+            disabled={isSending}
+          >
+            {isSending 
+              ? (comparisonOutput ? "Sending..." : "Generating plan...") 
+              : "Send Invite"}
           </button>
         </div>
       </div>

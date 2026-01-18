@@ -1,10 +1,15 @@
-import sushiRestaurant from "@/assets/sushi-restaurant.jpg";
-import burgerRestaurant from "@/assets/burger-restaurant.jpg";
 import italianRestaurant from "@/assets/italian-restaurant.jpg";
 import pizzaRestaurant from "@/assets/pizza-restaurant.jpg";
-import sushiDish1 from "@/assets/sushi-dish-1.jpg";
-import sushiDish2 from "@/assets/sushi-dish-2.jpg";
-import sushiDish3 from "@/assets/sushi-dish-3.jpg";
+
+// Sushi folder assets
+import sushi0 from "@/assets/sushi/sushi0.jpg";
+import sushi1 from "@/assets/sushi/sushi1.jpg";
+import sushi2 from "@/assets/sushi/sushi2.jpg";
+
+// Burgor folder assets
+import burgor0 from "@/assets/burgor/burgor0.jpg";
+import burgor1 from "@/assets/burgor/burgor1.jpg";
+import burgor2 from "@/assets/burgor/burgor2.jpg";
 
 export interface Restaurant {
   id: string;
@@ -45,8 +50,8 @@ export const restaurants: Restaurant[] = [
     "Service is quick, but it gets crowded during dinner hours.",
     "Great variety of rolls and the presentation is beautiful."
   ],
-    image: sushiRestaurant,
-    menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    image: sushi0,
+    menuImages: [sushi0, sushi1, sushi2],
   },
   {
     id: "2",
@@ -55,8 +60,8 @@ export const restaurants: Restaurant[] = [
     priceRange: "$$",
     rating: 4.3,
     category: "Burgers",
-    image: burgerRestaurant,
-    menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    image: burgor0,
+    menuImages: [burgor0, burgor1, burgor2],
     reviews: [
     "Burgers are juicy and cooked perfectly every time.",
     "Fries are crispy, but the wait can be long on weekends.",
@@ -71,7 +76,7 @@ export const restaurants: Restaurant[] = [
     rating: 4.7,
     category: "Italian",
     image: italianRestaurant,
-    menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    menuImages: [italianRestaurant, pizzaRestaurant, burgor0],
     reviews: [
     "Burgers are juicy and cooked perfectly every time.",
     "Fries are crispy, but the wait can be long on weekends.",
@@ -86,7 +91,7 @@ export const restaurants: Restaurant[] = [
     rating: 4.4,
     category: "Pizza",
     image: pizzaRestaurant,
-    menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    menuImages: [italianRestaurant, pizzaRestaurant, burgor0],
     reviews: [
     "Burgers are juicy and cooked perfectly every time.",
     "Fries are crispy, but the wait can be long on weekends.",
@@ -100,8 +105,8 @@ export const restaurants: Restaurant[] = [
     priceRange: "$$$",
     rating: 4.6,
     category: "Sushi",
-    image: sushiRestaurant,
-    menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    image: sushi0,
+    menuImages: [sushi0, sushi1, sushi2],
     reviews: [
     "Burgers are juicy and cooked perfectly every time.",
     "Fries are crispy, but the wait can be long on weekends.",
@@ -158,9 +163,9 @@ export const negativeReviews: string[] = [
 
 
 export const friends: Friend[] = [
-  { id: "1", name: "Aroha Upreti", email: "aroha@email.com" },
-  { id: "2", name: "Kelly Huang", email: "kelly@email.com" },
-  { id: "3", name: "Ahmad Soboh", email: "ahmad@email.com" },
+  { id: "1", name: "Aroha Upreti", email: "uaroha@gmail.com" },
+  { id: "2", name: "Kelly Huang", email: "khuian87@outlook.com" },
+  { id: "3", name: "Ahmad Soboh", email: "sobohahmad777@gmail.com" },
   { id: "4", name: "Guarav", email: "guarav@email.com" },
   { id: "5", name: "Jane Doe", email: "jane@email.com" },
 ];
