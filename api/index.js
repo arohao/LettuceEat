@@ -152,7 +152,25 @@ Plan focus: ${metricText}
 }
 
 const app = express();
-app.use(cors());
+
+// Configure CORS to allow frontend domain
+const corsOptions = {
+  origin: [
+    'https://lettuceeat-six.vercel.app',
+    'http://localhost:5173', // Vite default port
+    'http://localhost:3000',
+    'http://localhost:5174',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key'],
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests explicitly
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 
 async function extractStream(url, prompt) {
@@ -189,8 +207,22 @@ app.get("/extract", async (req, res) => {
 
   if (!url || !prompt) return res.status(400).send("Missing url or prompt");
 
-  // SSE headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
+  // Get origin from request and check if it's allowed
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://lettuceeat-six.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:5174',
+  ];
+  
+  // SSE headers with CORS
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  } else {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+  }
+  res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
