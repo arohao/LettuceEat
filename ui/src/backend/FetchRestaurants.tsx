@@ -35,16 +35,18 @@ const mapBackendRestaurant = (r: any): Restaurant => {
   const name = r.restaurant_name ?? "Unknown Restaurant";
   const address = r.address ?? "Address not available";
   const category = r.cuisine ?? "Other";
+  const restaurantId = generateRestaurantId(name, address);
   
   return {
-    id: generateRestaurantId(name, address),
+    id: restaurantId,
     name,
     address,
     priceRange: r.price ?? "$$",
     rating: typeof r.rating === "number" ? r.rating : 4.0,
     category,
     // Use utility function to get image with category-based fallback
-    image: getRestaurantImage(r.imageUrl, category),
+    // Pass restaurantId for Burgers/Sushi randomization
+    image: getRestaurantImage(r.imageUrl, category, restaurantId),
     // Use utility function to get menu images with category-based fallback
     menuImages: getRestaurantMenuImages(r.photos, category),
   };
@@ -128,12 +130,30 @@ export const RestaurantFetcher: React.FC<Props> = ({
     // Check cache first - PRIORITY: avoid API calls if cache is fresh
     const cached = getCachedRestaurants(foodType);
     
+    // Helper function to regenerate images for Burgers/Sushi restaurants
+    const regenerateImagesForCachedRestaurants = (restaurants: Restaurant[]): Restaurant[] => {
+      return restaurants.map((restaurant) => {
+        // Regenerate images for Burgers and Sushi to ensure randomization
+        if (restaurant.category === "Burgers" || restaurant.category === "Sushi" || 
+            restaurant.category?.toLowerCase() === "burger" || restaurant.category?.toLowerCase() === "japanese") {
+          return {
+            ...restaurant,
+            image: getRestaurantImage(null, restaurant.category, restaurant.id),
+            menuImages: getRestaurantMenuImages(null, restaurant.category),
+          };
+        }
+        return restaurant;
+      });
+    };
+    
     // If cache exists and is fresh (less than 1 hour old), skip ALL API calls to save credits
     if (cached && cached.length > 0) {
       const cacheIsFresh = isCacheFresh(foodType, 3600000); // 1 hour (3600000ms)
       if (cacheIsFresh) {
         console.log(`[Cache] ✓ "${foodType}" is fresh (< 1hr), using cache only - SKIPPING Gemini & YellowCake API calls`);
-        setRestaurants(cached);
+        // Regenerate images for Burgers/Sushi to ensure proper randomization
+        const restaurantsWithRegeneratedImages = regenerateImagesForCachedRestaurants(cached);
+        setRestaurants(restaurantsWithRegeneratedImages);
         setIsLoadingFromCache(false);
         hasReceivedDataRef.current = true;
         return; // Exit early - don't call ANY APIs (saves credits)
@@ -141,7 +161,9 @@ export const RestaurantFetcher: React.FC<Props> = ({
       
       // Cache exists but is stale - show it immediately, then revalidate in background
       console.log(`[Cache] "${foodType}" exists but is stale (> 1hr), showing cache and revalidating in background`);
-      setRestaurants(cached);
+      // Regenerate images for Burgers/Sushi to ensure proper randomization
+      const restaurantsWithRegeneratedImages = regenerateImagesForCachedRestaurants(cached);
+      setRestaurants(restaurantsWithRegeneratedImages);
       setIsLoadingFromCache(false);
       hasReceivedDataRef.current = true;
       // Continue to fetch new data below to update the cache

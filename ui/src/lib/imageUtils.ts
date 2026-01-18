@@ -33,6 +33,12 @@ const allFoodImages = [...burgorImages, ...sushiImages];
 const categoryImageCache: Record<string, string> = {};
 
 /**
+ * Cache for restaurant-specific images (for Burgers/Sushi randomization)
+ * Key: restaurantId, Value: image path
+ */
+const restaurantImageCache: Record<string, string> = {};
+
+/**
  * Cache for category menu images (so they stay consistent)
  */
 const categoryMenuImageCache: Record<string, string[]> = {};
@@ -49,6 +55,22 @@ function getCachedRandomImage(category: string, images: string[]): string {
   // Otherwise, randomly select and cache
   const selected = images[Math.floor(Math.random() * images.length)];
   categoryImageCache[category] = selected;
+  return selected;
+}
+
+/**
+ * Get a random image for a specific restaurant (for Burgers/Sushi randomization)
+ * Each restaurant gets its own random image that stays consistent
+ */
+function getRestaurantRandomImage(restaurantId: string, images: string[]): string {
+  // If already cached for this restaurant, return cached value
+  if (restaurantImageCache[restaurantId]) {
+    return restaurantImageCache[restaurantId];
+  }
+  
+  // Otherwise, randomly select and cache for this restaurant
+  const selected = images[Math.floor(Math.random() * images.length)];
+  restaurantImageCache[restaurantId] = selected;
   return selected;
 }
 
@@ -135,16 +157,28 @@ function getImageTypeForCategory(category: string): "burgor" | "sushi" | "italia
 /**
  * Category-based fallback images mapping
  * Maps cuisine types to appropriate images from assets
+ * @param category - Restaurant category
+ * @param restaurantId - Optional restaurant ID for per-restaurant randomization (Burgers/Sushi)
  */
-const getCategoryFallbackImageInternal = (category: string): string => {
+const getCategoryFallbackImageInternal = (category: string, restaurantId?: string): string => {
   const normalizedCategory = normalizeCategory(category);
   const imageType = getImageTypeForCategory(normalizedCategory);
   
   switch (imageType) {
     case "burgor":
+      // For Burgers category, use restaurant-specific randomization if ID provided
+      // This ensures each restaurant gets a different random image
+      if (restaurantId) {
+        return getRestaurantRandomImage(restaurantId, burgorImages);
+      }
       return getCachedRandomImage(normalizedCategory, burgorImages);
     
     case "sushi":
+      // For Sushi category, use restaurant-specific randomization if ID provided
+      // This ensures each restaurant gets a different random image
+      if (restaurantId) {
+        return getRestaurantRandomImage(restaurantId, sushiImages);
+      }
       return getCachedRandomImage(normalizedCategory, sushiImages);
     
     case "italian":
@@ -223,15 +257,16 @@ const getCategoryMenuFallbacksInternal = (category: string): string[] => {
 /**
  * Get fallback image for a restaurant category
  * @param category - Restaurant category (e.g., "Sushi", "Burgers")
+ * @param restaurantId - Optional restaurant ID for per-restaurant randomization (Burgers/Sushi)
  * @returns Fallback image path (randomly selected for Sushi/Burgers)
  */
-export function getCategoryFallbackImage(category: string | null | undefined): string {
+export function getCategoryFallbackImage(category: string | null | undefined, restaurantId?: string): string {
   if (!category) {
     // For undefined category, default to burgor
     return getCachedRandomImage("Other", burgorImages);
   }
   
-  return getCategoryFallbackImageInternal(category);
+  return getCategoryFallbackImageInternal(category, restaurantId);
 }
 
 /**
@@ -283,17 +318,19 @@ export function isValidImageUrl(url: string | null | undefined): boolean {
  * Get restaurant image with fallback logic
  * @param imageUrl - Primary image URL from API
  * @param category - Restaurant category for fallback
+ * @param restaurantId - Optional restaurant ID for per-restaurant randomization (Burgers/Sushi)
  * @returns Valid image URL or fallback
  */
 export function getRestaurantImage(
   imageUrl: string | null | undefined,
-  category: string | null | undefined
+  category: string | null | undefined,
+  restaurantId?: string
 ): string {
   if (isValidImageUrl(imageUrl)) {
     return imageUrl!;
   }
   
-  return getCategoryFallbackImage(category);
+  return getCategoryFallbackImage(category, restaurantId);
 }
 
 /**
