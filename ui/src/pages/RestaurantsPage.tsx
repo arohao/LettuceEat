@@ -5,6 +5,7 @@ import { SearchBar } from "@/components/SearchBar";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { restaurants } from "@/data/mockData";
+import { RestaurantFetcher } from "@/backend/FetchRestaurants";
 
 export const RestaurantsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -127,9 +128,7 @@ export const RestaurantsPage = () => {
         />
 
         <div className="space-y-4">
-          {filteredRestaurants.map((restaurant) => (
-            <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-          ))}
+          <RestaurantFetcher foodType={foodType} />
         </div>
 
         {filteredRestaurants.length === 0 && (

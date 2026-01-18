@@ -169,6 +169,7 @@ app.get("/extract", async (req, res) => {
     const stream = await extractStream(url, prompt);
 
     for await (const chunk of stream) {
+      console.log("Sending chunk:", chunk);
       res.write(chunk);
     }
     res.end();

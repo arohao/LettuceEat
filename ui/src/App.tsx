@@ -23,8 +23,7 @@ const App = () => {
 
   useEffect(() => {
     const url = encodeURIComponent("https://www.google.com/maps/search/restaurants+in+ottawa/");
-    const prompt = encodeURIComponent('Extract restaurant details for {food_type} restaurants in Ottawa: name, description, rating, price, address, phone. ');
-
+    const prompt = encodeURIComponent('Extract restaurant details for {food_type} restaurants in Ottawa: name, description, rating, price, address, phone, and a list of the 5 best reviews.');
 
     const eventSource = new EventSource(`http://localhost:3000/extract?url=${url}&prompt=${prompt}`);
 
