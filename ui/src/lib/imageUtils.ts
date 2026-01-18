@@ -68,106 +68,156 @@ function getCachedMenuImages(category: string, images: string[]): string[] {
 }
 
 /**
- * Category-based fallback images mapping
- * For Sushi and Burgers, randomly select from their respective folders
+ * Normalize category name (case-insensitive, trim whitespace)
  */
-const getCategoryFallbackImageInternal = (category: string): string => {
-  const normalizedCategory = category.trim();
+function normalizeCategory(category: string): string {
+  return category.trim();
+}
+
+/**
+ * Map cuisine category to image type
+ * Returns: "burgor" | "sushi" | "italian" | "pizza" | "other"
+ */
+function getImageTypeForCategory(category: string): "burgor" | "sushi" | "italian" | "pizza" | "other" {
+  const normalized = normalizeCategory(category).toLowerCase();
   
-  // Sushi and Japanese categories: randomly pick from sushi folder (cached)
-  if (normalizedCategory === "Sushi" || normalizedCategory === "Japanese") {
-    return getCachedRandomImage(normalizedCategory, sushiImages);
-  }
+  // Burgor images: Burgers, American, Mexican, BBQ, Fast Food, etc.
+  const burgorCategories = [
+    "burgers", "burger", "american", "mexican", "bbq", "barbecue", "fast food", 
+    "fast-food", "diner", "steakhouse", "steak", "pub", "gastropub", "comfort food"
+  ];
   
-  // Burgers category: randomly pick from burgor folder (cached)
-  if (normalizedCategory === "Burgers") {
-    return getCachedRandomImage(normalizedCategory, burgorImages);
-  }
+  // Sushi images: Sushi, Japanese, Chinese, Asian, Seafood, Thai, Vietnamese, Korean, etc.
+  const sushiCategories = [
+    "sushi", "japanese", "chinese", "asian", "seafood", "thai", "vietnamese", 
+    "korean", "ramen", "noodles", "dim sum", "dimsum", "poke", "sashimi", 
+    "indian", "curry", "fusion", "pan-asian"
+  ];
   
-  // Other categories use fixed images or cached random images
-  const otherCategoryImages: Record<string, string> = {
-    Italian: italianRestaurant,
-    Pizza: pizzaRestaurant,
-    Thai: italianRestaurant,
-    Indian: italianRestaurant,
-    Mediterranean: italianRestaurant,
+  // Italian image: Italian, Mediterranean, Greek, etc.
+  const italianCategories = [
+    "italian", "mediterranean", "greek", "turkish", "middle eastern", 
+    "middle-eastern", "lebanese", "spanish", "tapas", "european"
+  ];
+  
+  // Pizza image: Pizza
+  const pizzaCategories = ["pizza", "pizzeria"];
+  
+  // Check for matches: exact match first, then substring match
+  const checkMatch = (categories: string[], searchTerm: string): boolean => {
+    // Exact match
+    if (categories.includes(searchTerm)) return true;
+    // Substring match (e.g., "American" matches "American Fusion")
+    if (categories.some(cat => searchTerm.includes(cat))) return true;
+    return false;
   };
   
-  // If it's a fixed category, return it
-  if (otherCategoryImages[normalizedCategory]) {
-    return otherCategoryImages[normalizedCategory];
+  if (checkMatch(burgorCategories, normalized)) {
+    return "burgor";
   }
   
-  // For categories that use random images, cache them
-  if (normalizedCategory === "Mexican" || normalizedCategory === "American" || normalizedCategory === "Other") {
-    return getCachedRandomImage(normalizedCategory, burgorImages);
+  if (checkMatch(sushiCategories, normalized)) {
+    return "sushi";
   }
   
-  if (normalizedCategory === "Chinese" || normalizedCategory === "Seafood") {
-    return getCachedRandomImage(normalizedCategory, sushiImages);
+  if (checkMatch(italianCategories, normalized)) {
+    return "italian";
   }
   
-  // Default fallback
-  return getCachedRandomImage("Other", burgorImages);
+  if (checkMatch(pizzaCategories, normalized)) {
+    return "pizza";
+  }
+  
+  // Default to other (will use burgor as fallback)
+  return "other";
+}
+
+/**
+ * Category-based fallback images mapping
+ * Maps cuisine types to appropriate images from assets
+ */
+const getCategoryFallbackImageInternal = (category: string): string => {
+  const normalizedCategory = normalizeCategory(category);
+  const imageType = getImageTypeForCategory(normalizedCategory);
+  
+  switch (imageType) {
+    case "burgor":
+      return getCachedRandomImage(normalizedCategory, burgorImages);
+    
+    case "sushi":
+      return getCachedRandomImage(normalizedCategory, sushiImages);
+    
+    case "italian":
+      return italianRestaurant;
+    
+    case "pizza":
+      return pizzaRestaurant;
+    
+    case "other":
+    default:
+      // Default fallback to burgor
+      return getCachedRandomImage("Other", burgorImages);
+  }
 };
 
 /**
  * Get fallback menu images for a category
- * For Sushi and Burgers, use all images from their respective folders
+ * Uses the same image type mapping as thumbnails
  */
 const getCategoryMenuFallbacksInternal = (category: string): string[] => {
-  const normalizedCategory = category.trim();
+  const normalizedCategory = normalizeCategory(category);
+  const imageType = getImageTypeForCategory(normalizedCategory);
   
-  // Sushi and Japanese categories: use all sushi folder images (cached)
-  if (normalizedCategory === "Sushi" || normalizedCategory === "Japanese") {
-    return getCachedMenuImages(normalizedCategory, sushiImages);
+  // Check cache first
+  if (categoryMenuImageCache[normalizedCategory]) {
+    return categoryMenuImageCache[normalizedCategory];
   }
   
-  // Burgers category: use all burgor folder images (cached)
-  if (normalizedCategory === "Burgers") {
-    return getCachedMenuImages(normalizedCategory, burgorImages);
-  }
+  let menuImages: string[];
   
-  // Other categories - build menu images with cached random selections
-  if (!categoryMenuImageCache[normalizedCategory]) {
-    let menuImages: string[];
+  switch (imageType) {
+    case "burgor":
+      // Use all burgor images
+      menuImages = getCachedMenuImages(normalizedCategory, burgorImages);
+      break;
     
-    switch (normalizedCategory) {
-      case "Italian":
-        menuImages = [italianRestaurant, pizzaRestaurant, getCachedRandomImage(`${normalizedCategory}_menu`, burgorImages)];
-        break;
-      case "Pizza":
-        menuImages = [pizzaRestaurant, italianRestaurant, getCachedRandomImage(`${normalizedCategory}_menu`, burgorImages)];
-        break;
-      case "Thai":
-        menuImages = [italianRestaurant, getCachedRandomImage(`${normalizedCategory}_menu_sushi`, sushiImages), getCachedRandomImage(`${normalizedCategory}_menu_burgor`, burgorImages)];
-        break;
-      case "Mexican":
-        menuImages = [getCachedRandomImage(`${normalizedCategory}_menu`, burgorImages), italianRestaurant, pizzaRestaurant];
-        break;
-      case "Chinese":
-        menuImages = [getCachedRandomImage(`${normalizedCategory}_menu_sushi`, sushiImages), italianRestaurant, getCachedRandomImage(`${normalizedCategory}_menu_burgor`, burgorImages)];
-        break;
-      case "Indian":
-        menuImages = [italianRestaurant, getCachedRandomImage(`${normalizedCategory}_menu_sushi`, sushiImages), getCachedRandomImage(`${normalizedCategory}_menu_burgor`, burgorImages)];
-        break;
-      case "American":
-        menuImages = [getCachedRandomImage(`${normalizedCategory}_menu`, burgorImages), pizzaRestaurant, italianRestaurant];
-        break;
-      case "Seafood":
-        menuImages = [getCachedRandomImage(`${normalizedCategory}_menu_sushi`, sushiImages), italianRestaurant, getCachedRandomImage(`${normalizedCategory}_menu_burgor`, burgorImages)];
-        break;
-      case "Mediterranean":
-        menuImages = [italianRestaurant, pizzaRestaurant, getCachedRandomImage(`${normalizedCategory}_menu`, burgorImages)];
-        break;
-      default:
-        menuImages = [getCachedRandomImage(`${normalizedCategory}_menu`, burgorImages), italianRestaurant, pizzaRestaurant];
-    }
+    case "sushi":
+      // Use all sushi images
+      menuImages = getCachedMenuImages(normalizedCategory, sushiImages);
+      break;
     
-    categoryMenuImageCache[normalizedCategory] = menuImages;
+    case "italian":
+      // Italian + pizza + one random burgor
+      menuImages = [
+        italianRestaurant, 
+        pizzaRestaurant, 
+        getCachedRandomImage(`${normalizedCategory}_menu`, burgorImages)
+      ];
+      break;
+    
+    case "pizza":
+      // Pizza + italian + one random burgor
+      menuImages = [
+        pizzaRestaurant, 
+        italianRestaurant, 
+        getCachedRandomImage(`${normalizedCategory}_menu`, burgorImages)
+      ];
+      break;
+    
+    case "other":
+    default:
+      // Mix of burgor, italian, pizza
+      menuImages = [
+        getCachedRandomImage(`${normalizedCategory}_menu`, burgorImages), 
+        italianRestaurant, 
+        pizzaRestaurant
+      ];
+      break;
   }
   
-  return categoryMenuImageCache[normalizedCategory];
+  // Cache the result
+  categoryMenuImageCache[normalizedCategory] = menuImages;
+  return menuImages;
 };
 
 /**
@@ -177,8 +227,8 @@ const getCategoryMenuFallbacksInternal = (category: string): string[] => {
  */
 export function getCategoryFallbackImage(category: string | null | undefined): string {
   if (!category) {
-    // For "All" section or undefined category, randomly choose between burgor and sushi
-    return getCachedRandomImage("Other", allFoodImages);
+    // For undefined category, default to burgor
+    return getCachedRandomImage("Other", burgorImages);
   }
   
   return getCategoryFallbackImageInternal(category);
