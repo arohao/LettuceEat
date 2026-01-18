@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: uotta-hack8-backend
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Note: Set GEMINI_API_KEY and YELLOWCAKE_API_KEY in Render dashboard
+      # They are marked as sync: false for security
+    healthCheckPath: /
+    plan: free  # Change to 'starter' or 'standard' for production

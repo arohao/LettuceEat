@@ -717,19 +717,19 @@ process.on("unhandledRejection", (reason, promise) => {
   // Don't exit - keep server running
 });
 
-// For local development only: start the server
-// Only start if we're NOT on Vercel (Vercel sets VERCEL env variable)
+// Start the server
+// Render and local development both need app.listen()
+// Only skip if explicitly on Vercel (Vercel sets VERCEL env variable)
 if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`[Server] Running on http://localhost:${PORT}`);
+    console.log(`[Server] Running on port ${PORT}`);
+    console.log(`[Server] Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`[Server] Gemini AI: ${ai ? "✓ Initialized" : "✗ Not available"}`);
     console.log(`[Server] YellowCake: ${EXTRACT_API_KEY ? "✓ Available" : "✗ Not configured"}`);
   });
 }
 
-// Export for Vercel serverless functions
-// Vercel handles the server - DO NOT call app.listen() in serverless environment
-// Export both default and named export for compatibility
+// Export for Vercel serverless functions (if needed)
 export default app;
 export { app };
