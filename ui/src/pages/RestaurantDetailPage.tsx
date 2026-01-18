@@ -110,6 +110,7 @@ export const RestaurantDetailPage = () => {
             src={restaurant.image}
             alt={restaurant.name}
             category={restaurant.category}
+            restaurantId={restaurant.id}
             className="w-full aspect-[16/10] object-cover"
           />
         </div>
@@ -153,6 +154,7 @@ export const RestaurantDetailPage = () => {
                 src={image}
                 alt={`Menu item ${index + 1}`}
                 category={restaurant.category}
+                restaurantId={restaurant.id}
                 className="w-28 h-28 rounded-xl object-cover flex-shrink-0"
               />
             ))}
@@ -176,6 +178,7 @@ export const RestaurantDetailPage = () => {
                     src={similar.image}
                     alt={similar.name}
                     category={similar.category}
+                    restaurantId={similar.id}
                     className="w-24 h-24 rounded-xl object-cover mb-2"
                   />
                   <span className="text-sm font-medium text-foreground block w-24 truncate">{similar.name}</span>

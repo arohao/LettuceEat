@@ -166,19 +166,25 @@ const getCategoryFallbackImageInternal = (category: string, restaurantId?: strin
   
   switch (imageType) {
     case "burgor":
-      // For Burgers category, use restaurant-specific randomization if ID provided
+      // For Burgers category, ALWAYS use restaurant-specific randomization if ID provided
       // This ensures each restaurant gets a different random image
+      // Even if category-level cache exists, we want per-restaurant randomization
       if (restaurantId) {
+        // Use restaurantId as cache key to ensure consistency per restaurant
         return getRestaurantRandomImage(restaurantId, burgorImages);
       }
+      // Fallback to category-level cache only if no restaurantId
       return getCachedRandomImage(normalizedCategory, burgorImages);
     
     case "sushi":
-      // For Sushi category, use restaurant-specific randomization if ID provided
+      // For Sushi category, ALWAYS use restaurant-specific randomization if ID provided
       // This ensures each restaurant gets a different random image
+      // Even if category-level cache exists, we want per-restaurant randomization
       if (restaurantId) {
+        // Use restaurantId as cache key to ensure consistency per restaurant
         return getRestaurantRandomImage(restaurantId, sushiImages);
       }
+      // Fallback to category-level cache only if no restaurantId
       return getCachedRandomImage(normalizedCategory, sushiImages);
     
     case "italian":

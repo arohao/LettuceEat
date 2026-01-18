@@ -5,6 +5,7 @@ interface RestaurantImageProps {
   src: string;
   alt: string;
   category?: string;
+  restaurantId?: string;
   className?: string;
   fallbackClassName?: string;
 }
@@ -17,6 +18,7 @@ export const RestaurantImage = ({
   src,
   alt,
   category,
+  restaurantId,
   className = "",
   fallbackClassName = "",
 }: RestaurantImageProps) => {
@@ -25,7 +27,7 @@ export const RestaurantImage = ({
     if (src && isValidImageUrl(src)) {
       return src;
     }
-    return getCategoryFallbackImage(category);
+    return getCategoryFallbackImage(category, restaurantId);
   };
 
   const [imageError, setImageError] = useState(!isValidImageUrl(src));
@@ -38,16 +40,18 @@ export const RestaurantImage = ({
       setCurrentSrc(src);
     } else {
       // If src is invalid, use fallback immediately
-      const fallback = getCategoryFallbackImage(category);
+      // Use restaurantId to ensure consistent fallback image
+      const fallback = getCategoryFallbackImage(category, restaurantId);
       setCurrentSrc(fallback);
       setImageError(true);
     }
-  }, [src, category]);
+  }, [src, category, restaurantId]);
 
   const handleError = () => {
     if (!imageError) {
       // First error - try category fallback
-      const fallback = getCategoryFallbackImage(category);
+      // Use restaurantId to ensure consistent fallback image
+      const fallback = getCategoryFallbackImage(category, restaurantId);
       if (fallback !== currentSrc) {
         setCurrentSrc(fallback);
         setImageError(true);

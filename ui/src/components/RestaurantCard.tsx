@@ -20,6 +20,7 @@ export const RestaurantCard = ({ restaurant }: RestaurantCardProps) => {
           src={restaurant.image}
           alt={restaurant.name}
           category={restaurant.category}
+          restaurantId={restaurant.id}
           className="w-full h-full object-cover"
         />
       </div>

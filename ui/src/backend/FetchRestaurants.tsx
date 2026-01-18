@@ -133,9 +133,22 @@ export const RestaurantFetcher: React.FC<Props> = ({
     // Helper function to regenerate images for Burgers/Sushi restaurants
     const regenerateImagesForCachedRestaurants = (restaurants: Restaurant[]): Restaurant[] => {
       return restaurants.map((restaurant) => {
+        if (!restaurant.category) return restaurant;
+        
+        // Check if category matches burger or sushi patterns (same logic as getImageTypeForCategory)
+        const normalizedCategory = restaurant.category.trim().toLowerCase();
+        const isBurgerCategory = ["burgers", "burger", "american", "mexican", "bbq", "barbecue", "fast food", 
+          "fast-food", "diner", "steakhouse", "steak", "pub", "gastropub", "comfort food"].some(
+          cat => normalizedCategory === cat || normalizedCategory.includes(cat)
+        );
+        const isSushiCategory = ["sushi", "japanese", "chinese", "asian", "seafood", "thai", "vietnamese", 
+          "korean", "ramen", "noodles", "dim sum", "dimsum", "poke", "sashimi", 
+          "indian", "curry", "fusion", "pan-asian"].some(
+          cat => normalizedCategory === cat || normalizedCategory.includes(cat)
+        );
+        
         // Regenerate images for Burgers and Sushi to ensure randomization
-        if (restaurant.category === "Burgers" || restaurant.category === "Sushi" || 
-            restaurant.category?.toLowerCase() === "burger" || restaurant.category?.toLowerCase() === "japanese") {
+        if (isBurgerCategory || isSushiCategory) {
           return {
             ...restaurant,
             image: getRestaurantImage(null, restaurant.category, restaurant.id),
@@ -205,10 +218,19 @@ export const RestaurantFetcher: React.FC<Props> = ({
               const existingIndex = merged.findIndex((r) => r.id === newRestaurant.id);
               if (existingIndex >= 0) {
                 // Merge: preserve existing overview and other fields
+                // For burger/sushi restaurants, regenerate image to ensure proper randomization
+                const normalizedCategory = (newRestaurant.category || "").trim().toLowerCase();
+                const isBurgerOrSushi = ["burgers", "burger", "sushi", "japanese"].some(
+                  cat => normalizedCategory === cat || normalizedCategory.includes(cat)
+                );
+                
                 merged[existingIndex] = {
                   ...newRestaurant,
                   overview: merged[existingIndex].overview, // Preserve existing overview
-                  image: merged[existingIndex].image || newRestaurant.image,
+                  // Regenerate image for burger/sushi to ensure proper randomization
+                  image: isBurgerOrSushi 
+                    ? getRestaurantImage(null, newRestaurant.category, newRestaurant.id)
+                    : (merged[existingIndex].image || newRestaurant.image),
                   menuImages: merged[existingIndex].menuImages || newRestaurant.menuImages,
                 };
               } else {

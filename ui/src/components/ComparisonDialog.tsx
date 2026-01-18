@@ -224,6 +224,7 @@ export const ComparisonDialog = ({
                                     src={currentRestaurant.image}
                                     alt={currentRestaurant.name}
                                     category={currentRestaurant.category}
+                                    restaurantId={currentRestaurant.id}
                                     className="w-24 h-24 rounded-xl object-cover flex-shrink-0"
                                 />
                                 <div className="flex-1 min-w-0 overflow-hidden">
@@ -257,6 +258,7 @@ export const ComparisonDialog = ({
                                     src={compareRestaurant.image}
                                     alt={compareRestaurant.name}
                                     category={compareRestaurant.category}
+                                    restaurantId={compareRestaurant.id}
                                     className="w-24 h-24 rounded-xl object-cover flex-shrink-0"
                                 />
                                 <div className="flex-1 min-w-0 overflow-hidden">
