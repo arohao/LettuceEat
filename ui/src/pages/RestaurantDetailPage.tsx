@@ -1,11 +1,15 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Star, MapPin } from "lucide-react";
 import { Header } from "@/components/Header";
-import { restaurants, getSimilarRestaurants } from "@/data/mockData";
+import { restaurants, getSimilarRestaurants, Restaurant } from "@/data/mockData";
+import { ComparisonDialog } from "@/components/ComparisonDialog";
 
 export const RestaurantDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [compareDialogOpen, setCompareDialogOpen] = useState(false);
+  const [selectedCompareRestaurant, setSelectedCompareRestaurant] = useState<Restaurant | null>(null);
   
   const restaurant = restaurants.find((r) => r.id === id);
   
@@ -71,7 +75,10 @@ export const RestaurantDetailPage = () => {
               {similarRestaurants.map((similar) => (
                 <button
                   key={similar.id}
-                  onClick={() => navigate(`/restaurant/${similar.id}`)}
+                  onClick={() => {
+                    setSelectedCompareRestaurant(similar);
+                    setCompareDialogOpen(true);
+                  }}
                   className="flex-shrink-0 text-left"
                 >
                   <img
@@ -97,6 +104,15 @@ export const RestaurantDetailPage = () => {
           </button>
         </div>
       </div>
+
+      {selectedCompareRestaurant && (
+        <ComparisonDialog
+          open={compareDialogOpen}
+          onOpenChange={setCompareDialogOpen}
+          currentRestaurant={restaurant}
+          compareRestaurant={selectedCompareRestaurant}
+        />
+      )}
     </div>
   );
 };

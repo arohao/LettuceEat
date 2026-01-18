@@ -218,4 +218,75 @@ app.post("/review", async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+app.post("/reviews/summarize", async (req, res) => {
+  console.log("Received summarize request:", req.body);
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
+  }
+
+  const { restaurantName, reviews } = req.body || {};
+
+  // Basic validation
+  if (!Array.isArray(reviews) || reviews.length === 0) {
+    return res.status(400).json({
+      error: "Missing or invalid reviews. Expected an array of strings.",
+    });
+  }
+
+  // Keep it safe + avoid huge prompts
+  const cleaned = reviews
+    .filter((r) => typeof r === "string")
+    .map((r) => r.trim())
+    .filter(Boolean)
+    .slice(0, 60); // cap count (adjust as you like)
+
+  if (cleaned.length === 0) {
+    return res.status(400).json({ error: "No valid review strings provided." });
+  }
+
+  // Optional: cap total characters to prevent very large payloads
+  const MAX_CHARS = 8000;
+  let joined = cleaned.map((r) => `- ${r}`).join("\n");
+  if (joined.length > MAX_CHARS) joined = joined.slice(0, MAX_CHARS);
+
+  const prompt = `
+You are a concise restaurant review summarizer.
+
+${restaurantName ? `Restaurant: ${restaurantName}` : ""}
+
+Reviews:
+${joined}
+
+Instructions:
+- Summarize what the reviews are saying in EXACTLY 3 sentences total.
+- Capture the most common themes (pros/cons), overall sentiment, and any notable caveats.
+- Do not use bullet points, lists, headings, or emojis.
+- Do not mention being an AI.
+  `.trim();
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
+
+    const summary = (response.text || "").trim();
+    console.log("Generated summary:", summary);
+
+    return res.json({
+      summary
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Gemini request failed" });
+  }
+});
+
+// Testing connection 
+app.get("/health", (req, res) => {
+  console.log("Health check received");
+  res.json({ ok: true, time: Date.now() });
+});
+
+
+app.listen(3001, () => console.log("Server running on http://localhost:3001"));

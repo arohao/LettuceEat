@@ -15,6 +15,7 @@ export interface Restaurant {
   category: string;
   image: string;
   menuImages: string[];
+  reviews?: string[];
 }
 
 export interface Friend {
@@ -39,6 +40,11 @@ export const restaurants: Restaurant[] = [
     priceRange: "$$",
     rating: 4.5,
     category: "Sushi",
+    reviews: [
+    "Fish tastes very fresh and the rolls are nicely balanced.",
+    "Service is quick, but it gets crowded during dinner hours.",
+    "Great variety of rolls and the presentation is beautiful."
+  ],
     image: sushiRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
   },
@@ -51,6 +57,11 @@ export const restaurants: Restaurant[] = [
     category: "Burgers",
     image: burgerRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    reviews: [
+    "Burgers are juicy and cooked perfectly every time.",
+    "Fries are crispy, but the wait can be long on weekends.",
+    "Good value for the portion sizes and quality."
+    ]
   },
   {
     id: "3",
@@ -61,6 +72,11 @@ export const restaurants: Restaurant[] = [
     category: "Italian",
     image: italianRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    reviews: [
+    "Burgers are juicy and cooked perfectly every time.",
+    "Fries are crispy, but the wait can be long on weekends.",
+    "Good value for the portion sizes and quality."
+    ]
   },
   {
     id: "4",
@@ -71,6 +87,11 @@ export const restaurants: Restaurant[] = [
     category: "Pizza",
     image: pizzaRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    reviews: [
+    "Burgers are juicy and cooked perfectly every time.",
+    "Fries are crispy, but the wait can be long on weekends.",
+    "Good value for the portion sizes and quality."
+    ]
   },
   {
     id: "5",
@@ -81,6 +102,11 @@ export const restaurants: Restaurant[] = [
     category: "Sushi",
     image: sushiRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    reviews: [
+    "Burgers are juicy and cooked perfectly every time.",
+    "Fries are crispy, but the wait can be long on weekends.",
+    "Good value for the portion sizes and quality."
+    ]
   },
 ];
 
