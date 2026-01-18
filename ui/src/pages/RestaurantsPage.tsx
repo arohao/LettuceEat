@@ -5,11 +5,22 @@ import { SearchBar } from "@/components/SearchBar";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { RestaurantCard } from "@/components/RestaurantCard";
 import { restaurants } from "@/data/mockData";
+import { RestaurantFetcher } from "@/backend/FetchRestaurants";
 
 export const RestaurantsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [foodType, setFoodType] = useState("Sushi");
+  const [foodType, setFoodType] = useState("restaurants");
+  
+  // Update foodType when category changes (skip "All")
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    if (category === "All") {
+      setFoodType("restaurants");
+    } else {
+      setFoodType(category);
+    }
+  };
   const [comparisonMetric, setComparisonMetric] = useState("best interior design");
   const [maxWords, setMaxWords] = useState(25);
   const [reviewText, setReviewText] = useState("");
@@ -123,13 +134,11 @@ export const RestaurantsPage = () => {
 
         <CategoryFilter
           selected={selectedCategory}
-          onSelect={setSelectedCategory}
+          onSelect={handleCategorySelect}
         />
 
         <div className="space-y-4">
-          {filteredRestaurants.map((restaurant) => (
-            <RestaurantCard key={restaurant.id} restaurant={restaurant} />
-          ))}
+          <RestaurantFetcher foodType={foodType} />
         </div>
 
         {filteredRestaurants.length === 0 && (

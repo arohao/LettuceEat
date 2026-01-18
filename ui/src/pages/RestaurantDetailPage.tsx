@@ -1,19 +1,39 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Star, MapPin } from "lucide-react";
 import { Header } from "@/components/Header";
-import { restaurants, getSimilarRestaurants, Restaurant } from "@/data/mockData";
+import { restaurants, getSimilarRestaurants } from "@/data/mockData";
+import { getRestaurantById } from "@/lib/restaurantCache";
 import { ComparisonDialog } from "@/components/ComparisonDialog";
+import type { Restaurant } from "@/data/mockData";
 
 export const RestaurantDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [selectedCompareRestaurant, setSelectedCompareRestaurant] = useState<Restaurant | null>(null);
   
-  const restaurant = restaurants.find((r) => r.id === id);
+  useEffect(() => {
+    if (!id) {
+      setRestaurant(null);
+      return;
+    }
+    
+    // First, try to find in cache (fetched restaurants)
+    const cachedRestaurant = getRestaurantById(id);
+    if (cachedRestaurant) {
+      setRestaurant(cachedRestaurant);
+      return;
+    }
+    
+    // Fall back to mock data
+    const mockRestaurant = restaurants.find((r) => r.id === id);
+    setRestaurant(mockRestaurant || null);
+  }, [id]);
   
-  if (!restaurant) {
+  // Show loading state while searching
+  if (restaurant === null && id) {
     return (
       <div className="mobile-container pb-24">
         <Header title="Detail" showBack />

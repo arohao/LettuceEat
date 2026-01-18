@@ -1,10 +1,15 @@
 import express from "express";
 import cors from "cors";
+import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
-import "dotenv/config";
+
+dotenv.config();
+
+const EXTRACT_API_KEY = process.env.YELLOWCAKE_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 // The client gets the API key from the environment variable `GEMINI_API_KEY`.
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 const restaurantDescriptions = {
   "The Golden Fork": {
@@ -138,6 +143,75 @@ Plan focus: ${metricText}
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+async function extractStream(url, prompt) {
+  if (!EXTRACT_API_KEY) {
+    const error = new Error("Missing YELLOWCAKE_API_KEY in environment");
+    error.status = 500;
+    throw error;
+  }
+
+  const res = await fetch("https://api.yellowcake.dev/v1/extract-stream", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "text/event-stream",
+      "X-API-Key": EXTRACT_API_KEY,
+    },
+    body: JSON.stringify({ url, prompt }),
+  });
+
+  if (!res.ok) {
+    const errorBody = await res.text().catch(() => "");
+    const error = new Error(`Upstream extraction failed: ${res.status}`);
+    error.status = res.status;
+    error.body = errorBody;
+    throw error;
+  }
+
+  return res.body;
+}
+
+app.get("/extract", async (req, res) => {
+  const url = req.query.url;
+  const prompt = req.query.prompt;
+
+  if (!url || !prompt) return res.status(400).send("Missing url or prompt");
+
+  // SSE headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+
+  try {
+    const stream = await extractStream(url, prompt);
+    const decoder = new TextDecoder();
+    for await (const chunk of stream) {
+      console.log("Sending chunk:", decoder.decode(chunk));
+      res.write(chunk);
+    }
+    res.end();
+  } catch (err) {
+    console.error(err);
+    if (!res.headersSent) {
+      res.status(500);
+    }
+    if (res.getHeader("Content-Type") === "text/event-stream") {
+      const errorPayload = {
+        code: "UPSTREAM_ERROR",
+        message: err?.message || "Extraction failed",
+        status: err?.status || 500,
+        body: err?.body || null,
+        timestamp: Date.now(),
+      };
+      res.write(`event: error\ndata: ${JSON.stringify(errorPayload)}\n\n`);
+      res.end();
+    } else {
+      res.send("Extraction failed");
+    }
+  }
+});
 
 app.post("/review", async (req, res) => {
   const {
@@ -318,5 +392,64 @@ Instructions:
   }
 });
 
+// Available categories
+const AVAILABLE_CATEGORIES = [
+  "Burgers",
+  "Sushi",
+  "Italian",
+  "Pizza",
+  "Thai",
+  "Mexican",
+  "Chinese",
+  "Indian",
+  "American",
+  "Seafood",
+  "Japanese",
+  "Mediterranean",
+  "Other"
+];
+
+// Categorize restaurant using Gemini
+app.post("/categorize", async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
+  }
+
+  const { name, cuisine, description } = req.body || {};
+
+  if (!name) {
+    return res.status(400).json({ error: "Restaurant name is required" });
+  }
+
+  const prompt = `Categorize this restaurant into ONE of these categories: ${AVAILABLE_CATEGORIES.join(", ")}.
+
+Restaurant Name: ${name}
+Cuisine Type: ${cuisine || "Not specified"}
+Description: ${description || "Not available"}
+
+Respond with ONLY the category name from the list above. If it doesn't fit any category well, respond with "Other".`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+    });
+
+    const category = response.text.trim();
+    // Validate the category is in our list
+    const validCategory = AVAILABLE_CATEGORIES.includes(category) 
+      ? category 
+      : "Other";
+
+    res.json({ category: validCategory });
+  } catch (err) {
+    console.error("Categorization error:", err);
+    // Fallback to cuisine or "Other"
+    const fallbackCategory = cuisine && AVAILABLE_CATEGORIES.includes(cuisine) 
+      ? cuisine 
+      : "Other";
+    res.json({ category: fallbackCategory });
+  }
+});
 
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
