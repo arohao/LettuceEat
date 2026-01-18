@@ -227,20 +227,9 @@ app.get("/extract", async (req, res) => {
 app.post("/review", async (req, res) => {
   if (!ai) {
     console.error("[Review] Gemini AI not initialized");
-    console.error("[Review] GEMINI_API_KEY exists:", !!GEMINI_API_KEY);
-    console.error("[Review] GEMINI_API_KEY length:", GEMINI_API_KEY ? GEMINI_API_KEY.length : 0);
     return res.status(500).json({ 
       error: "Gemini AI not initialized. Check GEMINI_API_KEY.",
       details: "The server is missing the GEMINI_API_KEY environment variable."
-    });
-  }
-  
-  // Verify API key is set
-  if (!GEMINI_API_KEY) {
-    console.error("[Review] GEMINI_API_KEY is not set even though ai is initialized");
-    return res.status(500).json({ 
-      error: "GEMINI_API_KEY is not configured",
-      details: "The API key environment variable is missing."
     });
   }
 
@@ -277,37 +266,14 @@ app.post("/review", async (req, res) => {
   });
 
   try {
-    console.log("[Review] Calling Gemini API with model: gemini-2.5-flash");
-    console.log("[Review] Prompt length:", prompt.length);
-    
+    console.log("[Review] Calling Gemini API...");
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
     });
 
-    // Handle response - check if text property exists
-    let responseText = "";
-    try {
-      responseText = response.text || "";
-      console.log("[Review] Gemini response received, length:", responseText.length);
-    } catch (textError) {
-      console.error("[Review] Error accessing response.text:", textError);
-      // Try alternative access methods
-      if (response.candidates && response.candidates[0]) {
-        const candidate = response.candidates[0];
-        if (candidate.content && candidate.content.parts) {
-          responseText = candidate.content.parts
-            .filter(part => part.text)
-            .map(part => part.text)
-            .join("")
-            .trim();
-          console.log("[Review] Got text from candidates, length:", responseText.length);
-        }
-      }
-      if (!responseText) {
-        throw new Error(`Failed to extract text from response: ${textError.message}`);
-      }
-    }
+    const responseText = response.text || "";
+    console.log("[Review] Gemini response received, length:", responseText.length);
 
     res.json({
       text: responseText,
@@ -319,42 +285,14 @@ app.post("/review", async (req, res) => {
     console.error("[Review] Error details:", {
       name: err?.name,
       message: err?.message,
-      code: err?.code,
-      status: err?.status,
-      statusCode: err?.statusCode,
-      response: err?.response ? JSON.stringify(err.response).substring(0, 500) : undefined,
-      stack: err?.stack?.substring(0, 1000),
+      stack: err?.stack?.substring(0, 500),
     });
     
-    // Extract more detailed error message
-    let errorMessage = err?.message || "Unknown error";
-    let errorDetails = {
-      message: errorMessage,
-      name: err?.name,
-    };
-    
-    // Check for specific error types
-    if (err?.code) {
-      errorDetails.code = err.code;
-    }
-    if (err?.status) {
-      errorDetails.status = err.status;
-    }
-    if (err?.response) {
-      try {
-        errorDetails.response = typeof err.response === 'string' 
-          ? err.response.substring(0, 200) 
-          : JSON.stringify(err.response).substring(0, 200);
-      } catch {
-        // Ignore JSON parse errors
-      }
-    }
-    
+    const errorMessage = err?.message || "Unknown error";
     res.status(500).json({ 
       error: "Gemini request failed",
       details: errorMessage,
-      errorInfo: errorDetails,
-      suggestion: "Please check your GEMINI_API_KEY, API quota, and model name."
+      suggestion: "Please check your GEMINI_API_KEY and try again."
     });
   }
 });
@@ -777,11 +715,4 @@ process.on("uncaughtException", (error) => {
 process.on("unhandledRejection", (reason, promise) => {
   console.error("[Server] Unhandled Rejection at:", promise, "reason:", reason);
   // Don't exit - keep server running
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`[Server] Running on http://localhost:${PORT}`);
-  console.log(`[Server] Gemini AI: ${ai ? "✓ Initialized" : "✗ Not available"}`);
-  console.log(`[Server] YellowCake: ${EXTRACT_API_KEY ? "✓ Available" : "✗ Not configured"}`);
 });
