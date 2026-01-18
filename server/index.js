@@ -441,6 +441,54 @@ const AVAILABLE_CATEGORIES = [
   "Other"
 ];
 
+// Generate restaurant overview using Gemini
+app.post("/restaurant/overview", async (req, res) => {
+  if (!ai) {
+    return res.status(500).json({ error: "Gemini AI not initialized. Check GEMINI_API_KEY." });
+  }
+
+  const { name, address, category, rating, priceRange } = req.body || {};
+
+  if (!name) {
+    return res.status(400).json({ error: "Restaurant name is required" });
+  }
+
+  const prompt = `Write a brief, engaging overview (2-3 sentences, max 100 words) for this restaurant:
+
+Restaurant Name: ${name}
+Address: ${address || "Not specified"}
+Category: ${category || "Not specified"}
+Rating: ${rating || "Not specified"}
+Price Range: ${priceRange || "Not specified"}
+
+The overview should:
+- Highlight what makes this restaurant special
+- Mention the cuisine type and atmosphere
+- Be friendly and inviting
+- Not include the restaurant name or address (we'll display those separately)
+
+Write only the overview text, no headings or labels.`;
+
+  try {
+    console.log("[Overview] Generating overview for:", name);
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    const overview = (response.text || "").trim();
+    console.log("[Overview] Generated overview, length:", overview.length);
+
+    res.json({ overview });
+  } catch (err) {
+    console.error("[Overview] Gemini API error:", err);
+    res.status(500).json({ 
+      error: "Failed to generate overview",
+      details: err?.message || "Unknown error"
+    });
+  }
+});
+
 // Categorize restaurant using Gemini
 app.post("/categorize", async (req, res) => {
   if (!ai) {

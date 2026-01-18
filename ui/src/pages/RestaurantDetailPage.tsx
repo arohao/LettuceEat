@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import { Star, MapPin } from "lucide-react";
 import { Header } from "@/components/Header";
 import { restaurants as mockRestaurants } from "@/data/mockData";
-import { getRestaurantById, getRestaurantsByCategory } from "@/lib/restaurantCache";
+import { getRestaurantById, getRestaurantsByCategory, updateRestaurantInCache } from "@/lib/restaurantCache";
 import { ComparisonDialog } from "@/components/ComparisonDialog";
 import { RestaurantImage } from "@/components/RestaurantImage";
+import { apiEndpoint } from "@/lib/apiConfig";
 import type { Restaurant } from "@/data/mockData";
 
 export const RestaurantDetailPage = () => {
@@ -14,6 +15,7 @@ export const RestaurantDetailPage = () => {
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [compareDialogOpen, setCompareDialogOpen] = useState(false);
   const [selectedCompareRestaurant, setSelectedCompareRestaurant] = useState<Restaurant | null>(null);
+  const [overviewLoading, setOverviewLoading] = useState(false);
   
   useEffect(() => {
     if (!id) {
@@ -32,6 +34,55 @@ export const RestaurantDetailPage = () => {
     const mockRestaurant = mockRestaurants.find((r) => r.id === id);
     setRestaurant(mockRestaurant || null);
   }, [id]);
+
+  // Generate overview if restaurant doesn't have one
+  useEffect(() => {
+    const generateOverview = async () => {
+      if (!restaurant || restaurant.overview || overviewLoading) {
+        return;
+      }
+
+      setOverviewLoading(true);
+      try {
+        console.log("[Overview] Generating overview for:", restaurant.name);
+        const response = await fetch(apiEndpoint("restaurant/overview"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: restaurant.name,
+            address: restaurant.address,
+            category: restaurant.category,
+            rating: restaurant.rating,
+            priceRange: restaurant.priceRange,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to generate overview: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const overview = data.overview || "";
+
+        if (overview) {
+          // Update restaurant with overview
+          const updatedRestaurant = { ...restaurant, overview };
+          setRestaurant(updatedRestaurant);
+          
+          // Update in cache
+          updateRestaurantInCache(updatedRestaurant);
+          console.log("[Overview] ✓ Overview generated and cached");
+        }
+      } catch (error) {
+        console.error("[Overview] Error generating overview:", error);
+        // Don't show error to user - just continue without overview
+      } finally {
+        setOverviewLoading(false);
+      }
+    };
+
+    generateOverview();
+  }, [restaurant, overviewLoading]);
   
   // Show loading state while searching
   if (restaurant === null && id) {
@@ -77,6 +128,21 @@ export const RestaurantDetailPage = () => {
             <span>{typeof restaurant.rating === "number" ? restaurant.rating.toFixed(1) : "4.0"}</span>
           </div>
         </div>
+
+        {/* Restaurant Overview */}
+        {(restaurant.overview || overviewLoading) && (
+          <div className="border-t border-border pt-6 mb-6">
+            <h2 className="font-bold text-foreground mb-3">About</h2>
+            {overviewLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                <span className="text-sm">Generating overview...</span>
+              </div>
+            ) : restaurant.overview ? (
+              <p className="text-sm text-muted-foreground leading-relaxed">{restaurant.overview}</p>
+            ) : null}
+          </div>
+        )}
         
         <div className="border-t border-border pt-6 mb-6">
           <h2 className="font-bold text-foreground mb-4">Explore Menu</h2>

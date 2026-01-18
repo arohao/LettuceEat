@@ -282,3 +282,50 @@ export function clearExpiredCaches(): void {
     console.warn("Failed to clear expired caches:", error);
   }
 }
+
+/**
+ * Updates a restaurant in the cache by ID
+ * Finds the restaurant across all cache entries and updates it
+ * Returns true if update was successful, false otherwise
+ */
+export function updateRestaurantInCache(updatedRestaurant: Restaurant): boolean {
+  try {
+    const keys: string[] = [];
+    
+    // Collect all cache keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(CACHE_PREFIX)) {
+        keys.push(key);
+      }
+    }
+
+    // Search through all cache entries and update
+    for (const key of keys) {
+      try {
+        const cached = localStorage.getItem(key);
+        if (cached) {
+          const entry: CacheEntry = JSON.parse(cached);
+          if (isCacheValid(entry.timestamp)) {
+            const index = entry.restaurants.findIndex((r) => r.id === updatedRestaurant.id);
+            if (index >= 0) {
+              // Update the restaurant
+              entry.restaurants[index] = updatedRestaurant;
+              // Save back to cache
+              localStorage.setItem(key, JSON.stringify(entry));
+              console.log(`[Cache] ✓ Updated restaurant "${updatedRestaurant.name}" in cache`);
+              return true;
+            }
+          }
+        }
+      } catch {
+        continue;
+      }
+    }
+    
+    return false;
+  } catch (error) {
+    console.warn("Failed to update restaurant in cache:", error);
+    return false;
+  }
+}

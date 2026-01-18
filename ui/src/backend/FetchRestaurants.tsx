@@ -175,10 +175,25 @@ export const RestaurantFetcher: React.FC<Props> = ({
           
           // Show Gemini results immediately
           setRestaurants((prev) => {
-            // Merge with existing (avoid duplicates by ID)
+            // Merge with existing (avoid duplicates by ID, preserve existing data like overview)
+            const merged: Restaurant[] = [...prev];
             const existingIds = new Set(prev.map((r) => r.id));
-            const newRestaurants = geminiRestaurants.filter((r) => !existingIds.has(r.id));
-            const merged = [...prev, ...newRestaurants];
+            
+            geminiRestaurants.forEach((newRestaurant) => {
+              const existingIndex = merged.findIndex((r) => r.id === newRestaurant.id);
+              if (existingIndex >= 0) {
+                // Merge: preserve existing overview and other fields
+                merged[existingIndex] = {
+                  ...newRestaurant,
+                  overview: merged[existingIndex].overview, // Preserve existing overview
+                  image: merged[existingIndex].image || newRestaurant.image,
+                  menuImages: merged[existingIndex].menuImages || newRestaurant.menuImages,
+                };
+              } else {
+                // New restaurant
+                merged.push(newRestaurant);
+              }
+            });
             
             // Save to cache immediately
             const currentFoodType = foodTypeRef.current;
@@ -278,6 +293,8 @@ Do NOT extract images or photos - skip image extraction to save time.`
                 // Keep existing images (we're not extracting images from YellowCake anymore)
                 image: existing.image,
                 menuImages: existing.menuImages,
+                // Preserve existing overview
+                overview: existing.overview,
                 // Prefer YellowCake data for ratings/prices if available
                 rating: mapped.rating || existing.rating,
                 priceRange: mapped.priceRange || existing.priceRange,

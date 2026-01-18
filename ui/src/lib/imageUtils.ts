@@ -23,6 +23,11 @@ const sushiImages = [sushi0, sushi1, sushi2];
 const burgorImages = [burgor0, burgor1, burgor2];
 
 /**
+ * Combined array of all burgor and sushi images for random selection in "All" section
+ */
+const allFoodImages = [...burgorImages, ...sushiImages];
+
+/**
  * Cache for category fallback images (so they stay consistent)
  */
 const categoryImageCache: Record<string, string> = {};
@@ -172,7 +177,8 @@ const getCategoryMenuFallbacksInternal = (category: string): string[] => {
  */
 export function getCategoryFallbackImage(category: string | null | undefined): string {
   if (!category) {
-    return getCachedRandomImage("Other", burgorImages); // Default fallback - cached random burgor image
+    // For "All" section or undefined category, randomly choose between burgor and sushi
+    return getCachedRandomImage("Other", allFoodImages);
   }
   
   return getCategoryFallbackImageInternal(category);

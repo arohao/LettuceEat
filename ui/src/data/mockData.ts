@@ -21,6 +21,7 @@ export interface Restaurant {
   image: string;
   menuImages: string[];
   reviews?: string[];
+  overview?: string; // AI-generated overview of the restaurant
 }
 
 export interface Friend {
