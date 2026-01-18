@@ -16,6 +16,7 @@ import { apiEndpoint } from "@/lib/apiConfig";
 
 type Props = {
   foodType?: string;
+  searchQuery?: string;
 };
 
 // -------------------------------
@@ -51,6 +52,7 @@ const mapBackendRestaurant = (r: any): Restaurant => {
 
 export const RestaurantFetcher: React.FC<Props> = ({
   foodType = "restaurants",
+  searchQuery = "",
 }) => {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -372,6 +374,19 @@ Do NOT extract images or photos - skip image extraction to save time.`
   }, [startStream]);
 
   // -------------------------------
+  // Filter restaurants by search query
+  // -------------------------------
+  const filteredRestaurants = restaurants.filter((restaurant) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      restaurant.name.toLowerCase().includes(query) ||
+      restaurant.address.toLowerCase().includes(query) ||
+      restaurant.category.toLowerCase().includes(query)
+    );
+  });
+
+  // -------------------------------
   // Render
   // -------------------------------
   // Show loading skeleton only if we have no restaurants and no cache was loaded
@@ -388,8 +403,15 @@ Do NOT extract images or photos - skip image extraction to save time.`
       <RestaurantSkeleton visible={isLoading} />
       <RestaurantSkeleton visible={isLoading} />
 
+      {/* Show message if search returns no results */}
+      {!isLoading && filteredRestaurants.length === 0 && searchQuery.trim() && (
+        <div className="text-center py-12 text-muted-foreground">
+          <p>No restaurants found matching "{searchQuery}"</p>
+        </div>
+      )}
+
       {/* Live streamed cards */}
-      {restaurants.map((restaurant) => (
+      {filteredRestaurants.map((restaurant) => (
         <RestaurantCard
           key={restaurant.id}
           restaurant={restaurant}

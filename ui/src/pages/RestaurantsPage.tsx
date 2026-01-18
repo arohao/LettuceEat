@@ -3,8 +3,6 @@ import { MapPin } from "lucide-react";
 import lettuceLogo from "@/assets/lettuce-logo.png";
 import { SearchBar } from "@/components/SearchBar";
 import { CategoryFilter } from "@/components/CategoryFilter";
-import { RestaurantCard } from "@/components/RestaurantCard";
-import { restaurants } from "@/data/mockData";
 import { RestaurantFetcher } from "@/backend/FetchRestaurants";
 
 const SELECTED_CATEGORY_KEY = "selected_category";
@@ -47,13 +45,6 @@ export const RestaurantsPage = () => {
   const [reviewText, setReviewText] = useState("");
   const [reviewStatus, setReviewStatus] = useState("idle");
   const [reviewError, setReviewError] = useState("");
-
-  const filteredRestaurants = restaurants.filter((restaurant) => {
-    const matchesSearch = restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      restaurant.address.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || restaurant.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
 
   const handleGenerateReview = async () => {
     setReviewStatus("loading");
@@ -159,14 +150,8 @@ export const RestaurantsPage = () => {
         />
 
         <div className="space-y-4">
-          <RestaurantFetcher foodType={foodType} />
+          <RestaurantFetcher foodType={foodType} searchQuery={searchQuery} />
         </div>
-
-        {filteredRestaurants.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <p>No restaurants found</p>
-          </div>
-        )}
       </div>
     </div>
   );
