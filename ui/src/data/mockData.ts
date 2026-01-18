@@ -15,6 +15,7 @@ export interface Restaurant {
   category: string;
   image: string;
   menuImages: string[];
+  reviews?: string[];
 }
 
 export interface Friend {
@@ -39,6 +40,11 @@ export const restaurants: Restaurant[] = [
     priceRange: "$$",
     rating: 4.5,
     category: "Sushi",
+    reviews: [
+    "Fish tastes very fresh and the rolls are nicely balanced.",
+    "Service is quick, but it gets crowded during dinner hours.",
+    "Great variety of rolls and the presentation is beautiful."
+  ],
     image: sushiRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
   },
@@ -51,6 +57,11 @@ export const restaurants: Restaurant[] = [
     category: "Burgers",
     image: burgerRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    reviews: [
+    "Burgers are juicy and cooked perfectly every time.",
+    "Fries are crispy, but the wait can be long on weekends.",
+    "Good value for the portion sizes and quality."
+    ]
   },
   {
     id: "3",
@@ -61,6 +72,11 @@ export const restaurants: Restaurant[] = [
     category: "Italian",
     image: italianRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    reviews: [
+    "Burgers are juicy and cooked perfectly every time.",
+    "Fries are crispy, but the wait can be long on weekends.",
+    "Good value for the portion sizes and quality."
+    ]
   },
   {
     id: "4",
@@ -71,6 +87,11 @@ export const restaurants: Restaurant[] = [
     category: "Pizza",
     image: pizzaRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    reviews: [
+    "Burgers are juicy and cooked perfectly every time.",
+    "Fries are crispy, but the wait can be long on weekends.",
+    "Good value for the portion sizes and quality."
+    ]
   },
   {
     id: "5",
@@ -81,8 +102,60 @@ export const restaurants: Restaurant[] = [
     category: "Sushi",
     image: sushiRestaurant,
     menuImages: [sushiDish1, sushiDish2, sushiDish3],
+    reviews: [
+    "Burgers are juicy and cooked perfectly every time.",
+    "Fries are crispy, but the wait can be long on weekends.",
+    "Good value for the portion sizes and quality."
+    ]
   },
 ];
+
+export const positiveReviews: string[] = [
+  "The food was delicious and full of flavor.",
+  "Great atmosphere and really friendly staff.",
+  "Everything came out fresh and well prepared.",
+  "Service was quick and attentive.",
+  "Definitely a place I would come back to.",
+  "The menu had lots of good options to choose from.",
+  "Portions were generous for the price.",
+  "Clean, comfortable, and welcoming environment.",
+  "The staff made us feel right at home.",
+  "Food presentation was beautiful.",
+  "Prices felt fair for the quality.",
+  "Really enjoyed my experience here.",
+  "The flavors were well balanced and satisfying.",
+  "Perfect spot for a casual meal.",
+  "Great value and great taste.",
+  "The food exceeded my expectations.",
+  "Nice place to eat with friends or family.",
+  "Everything tasted fresh and well seasoned.",
+  "Service was polite and professional.",
+  "I would recommend this place to others."
+];
+
+export const negativeReviews: string[] = [
+  "The food was underwhelming and lacked flavor.",
+  "Service was slower than expected.",
+  "The place felt crowded and noisy.",
+  "Food arrived cold.",
+  "Staff seemed rushed and inattentive.",
+  "Portions were smaller than expected.",
+  "Prices felt high for the quality.",
+  "The restaurant wasn’t very clean.",
+  "Wait time was longer than we were told.",
+  "The dish didn’t match the description on the menu.",
+  "Food was overcooked.",
+  "Not as good as I hoped it would be.",
+  "Drinks took a long time to come out.",
+  "The experience felt disorganized.",
+  "Food was bland.",
+  "Service felt impersonal.",
+  "The seating was uncomfortable.",
+  "Not worth the price.",
+  "I probably wouldn’t return.",
+  "Overall, a disappointing experience."
+];
+
 
 export const friends: Friend[] = [
   { id: "1", name: "Aroha Upreti", email: "aroha@email.com" },
