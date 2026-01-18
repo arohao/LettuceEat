@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
 import { generateAvailability, friendAvailabilities, restaurants } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
+import { getRestaurantById } from "@/lib/restaurantCache";
+import type { Restaurant } from "@/data/mockData";
 
 export const CreateEventPage = () => {
   const { id } = useParams();
@@ -12,7 +14,25 @@ export const CreateEventPage = () => {
   const { toast } = useToast();
   
   const invitedFriends = (location.state as { invitedFriends?: string[] })?.invitedFriends || [];
-  const restaurant = restaurants.find((r) => r.id === id);
+  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  
+  useEffect(() => {
+    if (!id) {
+      setRestaurant(null);
+      return;
+    }
+    
+    // First, try to find in cache (fetched restaurants)
+    const cachedRestaurant = getRestaurantById(id);
+    if (cachedRestaurant) {
+      setRestaurant(cachedRestaurant);
+      return;
+    }
+    
+    // Fall back to mock data
+    const mockRestaurant = restaurants.find((r) => r.id === id);
+    setRestaurant(mockRestaurant || null);
+  }, [id]);
   
   const [eventName, setEventName] = useState("");
   const [message, setMessage] = useState("");
@@ -40,7 +60,7 @@ export const CreateEventPage = () => {
 
     toast({
       title: "Invites sent! 🎉",
-      description: `Your event "${eventName}" at ${restaurant?.name} has been created!`,
+      description: `Your event "${eventName.trim()}" at ${restaurant?.name} has been created!`,
     });
     
     navigate("/");
