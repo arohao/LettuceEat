@@ -717,10 +717,6 @@ process.on("unhandledRejection", (reason, promise) => {
   // Don't exit - keep server running
 });
 
-// Export for Vercel serverless functions
-// Vercel handles the server - DO NOT call app.listen() in serverless environment
-export default app;
-
 // For local development only: start the server
 // Only start if we're NOT on Vercel (Vercel sets VERCEL env variable)
 if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
@@ -731,3 +727,9 @@ if (!process.env.VERCEL && !process.env.VERCEL_ENV) {
     console.log(`[Server] YellowCake: ${EXTRACT_API_KEY ? "✓ Available" : "✗ Not configured"}`);
   });
 }
+
+// Export for Vercel serverless functions
+// Vercel handles the server - DO NOT call app.listen() in serverless environment
+// Export both default and named export for compatibility
+export default app;
+export { app };
