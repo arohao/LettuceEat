@@ -90,31 +90,49 @@ function formatRestaurantData(data) {
     .join("\n\n");
 }
 
-function buildPrompt({ foodType, comparisonMetric, maxWords }) {
+function buildPrompt({
+  foodType,
+  comparisonMetric,
+  maxWords,
+  eventName,
+  restaurantName,
+  dateTime,
+  friendMessage,
+  invited,
+}) {
   const metricText = comparisonMetric?.trim()
     ? comparisonMetric.trim()
     : "overall best experience";
   const safeMaxWords =
     Number.isFinite(maxWords) && maxWords > 0 ? maxWords : 25;
+  const invitedText =
+    Array.isArray(invited) && invited.length > 0
+      ? invited.join(", ")
+      : "(no names provided)";
 
   return `### ROLE
-You are a friendly, enthusiastic regional food reviewer specializing in ${foodType}. Your tone is helpful, inviting, and decisive.
+You are a friendly, enthusiastic organizer specializing in ${foodType}. Your tone is helpful, inviting, and decisive.
 
 ### DATA (Restaurant Descriptions + Reviews)
 ${formatRestaurantData(restaurantDescriptions)}
 
 ### USER REQUEST
-The user wants to find the best restaurant among the data provided above based specifically on this criteria: "${metricText}".
+Create a concise meetup plan based on the details below.
+
+Event name: ${eventName || "(not provided)"}
+Restaurant: ${restaurantName || "(not provided)"}
+Food type: ${foodType}
+Time: ${dateTime || "(not provided)"}
+Invited: ${invitedText}
+Friend message: ${friendMessage || "(not provided)"}
+Plan focus: ${metricText}
 
 ### INSTRUCTIONS
-1. Analyze the provided restaurant descriptions.
-2. Compare them strictly against the user's specific criteria stated above.
-3. Select the "winner" that best fits the criteria.
-4. Write a short review (maximum ${safeMaxWords} words) announcing the winner and briefly explaining why it fits the specific criteria better than the others.
-5. Give the winner a rating out of 10.
-6. Do not mention that you are an AI or that you are analyzing data; speak as a human reviewer.
+1. Use the restaurant descriptions to choose the best fit for the plan focus.
+2. Write a short plan (maximum ${safeMaxWords} words) that includes a suggested dress code (e.g., business casual), the meetup time, and a friendly summary for the group.
+3. Do not mention that you are an AI or that you are analyzing data; speak as a human organizer.
 
-### REVIEW`;
+### PLAN`;
 }
 
 const app = express();
@@ -122,12 +140,25 @@ app.use(cors());
 app.use(express.json());
 
 app.post("/review", async (req, res) => {
-  const { foodType, comparisonMetric, maxWords, friendMessage } =
-    req.body || {};
+  const {
+    foodType,
+    comparisonMetric,
+    maxWords,
+    friendMessage,
+    eventName,
+    restaurantName,
+    dateTime,
+    invited,
+  } = req.body || {};
   const prompt = buildPrompt({
     foodType: foodType?.trim() || "Local Cuisine",
     comparisonMetric,
     maxWords,
+    eventName,
+    restaurantName,
+    dateTime,
+    friendMessage,
+    invited,
   });
 
   try {

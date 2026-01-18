@@ -34,6 +34,9 @@ export const CreateEventPage = () => {
     const parsedMaxWords = Number.parseInt(maxWords, 10);
     const safeMaxWords = Number.isFinite(parsedMaxWords) && parsedMaxWords > 0 ? parsedMaxWords : 25;
     const resolvedFoodType = foodType.trim() || restaurant?.category || "Local Cuisine";
+    const invitedNames = friends
+      .filter((friend) => invitedFriends.includes(friend.id))
+      .map((friend) => friend.name);
 
     try {
       const response = await fetch("http://localhost:3000/review", {
@@ -45,6 +48,11 @@ export const CreateEventPage = () => {
           foodType: resolvedFoodType,
           comparisonMetric: comparisonMetric.trim(),
           maxWords: safeMaxWords,
+          eventName: eventName.trim() || null,
+          restaurantName: restaurant?.name || null,
+          dateTime: selectedDateTime || null,
+          friendMessage: message.trim() || null,
+          invited: invitedNames,
         }),
       });
 
@@ -163,7 +171,7 @@ export const CreateEventPage = () => {
         </div>
 
         <div className="border-t border-border pt-6">
-          <h2 className="font-bold text-foreground mb-4">Compare Restaurants</h2>
+          <h2 className="font-bold text-foreground mb-4">Create Plan</h2>
           <div className="space-y-3">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
@@ -186,7 +194,7 @@ export const CreateEventPage = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                Comparison criteria
+                Plan focus
               </label>
               <input
                 type="text"
@@ -213,7 +221,7 @@ export const CreateEventPage = () => {
               className="btn-primary"
               disabled={isComparing}
             >
-              {isComparing ? "Comparing..." : "Run Comparison"}
+              {isComparing ? "Creating plan..." : "Create Plan"}
             </button>
             {compareError && (
               <p className="text-sm text-destructive">{compareError}</p>
