@@ -25,8 +25,12 @@ export const InviteFriendsPage = () => {
   };
 
   const handleCreateEvent = () => {
+    const selectedEmails = friends
+      .filter((friend) => invitedFriends.includes(friend.id))
+      .map((friend) => friend.email);
+
     navigate(`/restaurant/${id}/create-event`, { 
-      state: { invitedFriends } 
+      state: { invitedFriends, invitedEmails: selectedEmails } 
     });
   };
 

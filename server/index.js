@@ -1,14 +1,10 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
+import "dotenv/config";
 
-dotenv.config();
-
-const EXTRACT_API_KEY = process.env.YELLOWCAKE_API_KEY;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+// The client gets the API key from the environment variable `GEMINI_API_KEY`.
+const ai = new GoogleGenAI({});
 
 const restaurantDescriptions = {
   "The Golden Fork": {
@@ -125,80 +121,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-async function extractStream(url, prompt) {
-  if (!EXTRACT_API_KEY) {
-    const error = new Error("Missing YELLOWCAKE_API_KEY in environment");
-    error.status = 500;
-    throw error;
-  }
-
-  const res = await fetch("https://api.yellowcake.dev/v1/extract-stream", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "text/event-stream",
-      "X-API-Key": EXTRACT_API_KEY,
-    },
-    body: JSON.stringify({ url, prompt }),
-  });
-
-  if (!res.ok) {
-    const errorBody = await res.text().catch(() => "");
-    const error = new Error(`Upstream extraction failed: ${res.status}`);
-    error.status = res.status;
-    error.body = errorBody;
-    throw error;
-  }
-
-  return res.body;
-}
-
-app.get("/extract", async (req, res) => {
-  const url = req.query.url;
-  const prompt = req.query.prompt;
-
-  if (!url || !prompt) return res.status(400).send("Missing url or prompt");
-
-  // SSE headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-
-  try {
-    const stream = await extractStream(url, prompt);
-
-    for await (const chunk of stream) {
-      res.write(chunk);
-    }
-    res.end();
-  } catch (err) {
-    console.error(err);
-    if (!res.headersSent) {
-      res.status(500);
-    }
-    if (res.getHeader("Content-Type") === "text/event-stream") {
-      const errorPayload = {
-        code: "UPSTREAM_ERROR",
-        message: err?.message || "Extraction failed",
-        status: err?.status || 500,
-        body: err?.body || null,
-        timestamp: Date.now(),
-      };
-      res.write(`event: error\ndata: ${JSON.stringify(errorPayload)}\n\n`);
-      res.end();
-    } else {
-      res.send("Extraction failed");
-    }
-  }
-});
-
 app.post("/review", async (req, res) => {
-  if (!GEMINI_API_KEY) {
-    return res.status(500).json({ error: "Missing GEMINI_API_KEY" });
-  }
-
-  const { foodType, comparisonMetric, maxWords } = req.body || {};
+  const { foodType, comparisonMetric, maxWords, friendMessage } =
+    req.body || {};
   const prompt = buildPrompt({
     foodType: foodType?.trim() || "Local Cuisine",
     comparisonMetric,
@@ -211,7 +136,11 @@ app.post("/review", async (req, res) => {
       contents: prompt,
     });
 
-    res.json({ text: response.text, prompt });
+    res.json({
+      text: response.text,
+      prompt,
+      friendMessage: friendMessage || null,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Gemini request failed" });

@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Star, MapPin } from "lucide-react";
 import { Header } from "@/components/Header";
-import { restaurants, getSimilarRestaurants } from "@/data/mockData";
+import { restaurants } from "@/data/mockData";
 
 export const RestaurantDetailPage = () => {
   const { id } = useParams();
@@ -20,8 +20,6 @@ export const RestaurantDetailPage = () => {
     );
   }
   
-  const similarRestaurants = getSimilarRestaurants(restaurant.id, restaurant.category);
-
   return (
     <div className="mobile-container pb-32">
       <Header title="Detail" showBack />
@@ -64,27 +62,6 @@ export const RestaurantDetailPage = () => {
           </div>
         </div>
         
-        {similarRestaurants.length > 0 && (
-          <div className="border-t border-border pt-6 mb-6">
-            <h2 className="font-bold text-foreground mb-4">Compare with similar restaurants</h2>
-            <div className="flex gap-3 overflow-x-auto pb-2">
-              {similarRestaurants.map((similar) => (
-                <button
-                  key={similar.id}
-                  onClick={() => navigate(`/restaurant/${similar.id}`)}
-                  className="flex-shrink-0 text-left"
-                >
-                  <img
-                    src={similar.image}
-                    alt={similar.name}
-                    className="w-24 h-24 rounded-xl object-cover mb-2"
-                  />
-                  <p className="text-sm font-medium text-foreground">{similar.name}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
       
       <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 bg-gradient-to-t from-background via-background to-transparent pt-8">

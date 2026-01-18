@@ -1,6 +1,3 @@
-// Essentials
-import {useEffect} from "react";
-
 // Components
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -15,37 +12,10 @@ import { CreateEventPage } from "./pages/CreateEventPage";
 import { FriendsPage } from "./pages/FriendsPage";
 import { AvailabilityPage } from "./pages/AvailabilityPage";
 import NotFound from "./pages/NotFound";
-import { error } from "console";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-
-  useEffect(() => {
-    const url = encodeURIComponent("https://www.google.com/maps/search/restaurants+in+ottawa/");
-    const prompt = encodeURIComponent('Extract restaurant details for {food_type} restaurants in Ottawa: name, description, rating, price, address, phone. ');
-
-
-    const eventSource = new EventSource(`http://localhost:3000/extract?url=${url}&prompt=${prompt}`);
-
-    eventSource.onerror = (error: Event) => {
-      console.error("EventSource failed:", error);
-      eventSource.close();
-    };
-    
-    eventSource.addEventListener("progress", (event: MessageEvent) => {
-      console.log("Progress event:", event.data);
-    });
-
-
-    eventSource.addEventListener("chunk", (event: MessageEvent) => {
-      console.log("Chunk event:", JSON.parse(event.data));
-    });
-
-    return () => {
-      eventSource.close();
-    };
-  }, []);
 
   return (<QueryClientProvider client={queryClient}>
     <TooltipProvider>
