@@ -5,6 +5,7 @@ import { AvailabilityCalendar } from "@/components/AvailabilityCalendar";
 import { generateAvailability, friendAvailabilities, restaurants, friends } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { getRestaurantById } from "@/lib/restaurantCache";
+import { apiEndpoint } from "@/lib/apiConfig";
 import type { Restaurant } from "@/data/mockData";
 
 export const CreateEventPage = () => {
@@ -50,13 +51,8 @@ export const CreateEventPage = () => {
       .filter((friend) => invitedFriends.includes(friend.id))
       .map((friend) => friend.name);
 
-    const API =
-      import.meta.env.PROD
-      ? "https://uottahack8.onrender.com"
-      : "http://localhost:3000";
-
     try {
-      const response = await fetch(`${API}/review`, {
+      const response = await fetch(apiEndpoint("review"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -190,11 +186,7 @@ export const CreateEventPage = () => {
       });
       
       // Use backend proxy to avoid CORS issues
-      const API = import.meta.env.PROD
-        ? "https://uottahack8.onrender.com"
-        : "http://localhost:3000";
-      
-      const zapierResponse = await fetch(`${API}/zapier/webhook`, {
+      const zapierResponse = await fetch(apiEndpoint("zapier/webhook"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

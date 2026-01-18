@@ -12,6 +12,7 @@ import {
   getRestaurantImage,
   getRestaurantMenuImages,
 } from "@/lib/imageUtils";
+import { apiEndpoint } from "@/lib/apiConfig";
 
 type Props = {
   foodType?: string;
@@ -156,7 +157,7 @@ export const RestaurantFetcher: React.FC<Props> = ({
       try {
         console.log(`[Gemini] Fetching restaurant list for "${foodType}"...`);
         const response = await fetch(
-          `http://localhost:3000/restaurants/gemini?foodType=${encodeURIComponent(foodType)}&location=Ottawa`
+          `${apiEndpoint("restaurants/gemini")}?foodType=${encodeURIComponent(foodType)}&location=Ottawa`
         );
         
         if (!response.ok) {
@@ -202,10 +203,6 @@ export const RestaurantFetcher: React.FC<Props> = ({
     // NOTE: This will only run if cache is missing or stale (> 1 hour old)
     const startYellowCakeScraping = () => {
       console.log(`[YellowCake] 💰 API CALL: Starting enrichment scraping for "${foodType}"...`);
-      const API =
-        import.meta.env.PROD
-          ? "https://uottahack8.onrender.com"
-          : "http://localhost:3000";
       const url = encodeURIComponent(
         `https://www.google.com/maps/search/${foodType}+in+ottawa/`
       );
@@ -222,7 +219,7 @@ Do NOT extract images or photos - skip image extraction to save time.`
       );
 
       const es = new EventSource(
-        `${API}/extract?url=${url}&prompt=${prompt}`
+        `${apiEndpoint("extract")}?url=${url}&prompt=${prompt}`
       );
 
       eventSourceRef.current = es;

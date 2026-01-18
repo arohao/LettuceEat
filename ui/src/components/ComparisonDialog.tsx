@@ -109,11 +109,6 @@ export const ComparisonDialog = ({
 
         setLoading(true);
         try {
-          const API =
-            import.meta.env.PROD
-              ? "https://uottahack8.onrender.com"
-              : "http://localhost:3000";
-
           const currentPayload = {
             restaurantName: currentRestaurant.name,
             positiveReviews: pickRandom(positiveReviews, 5),
@@ -127,12 +122,12 @@ export const ComparisonDialog = ({
           };
 
           const [currentRes, compareRes] = await Promise.all([
-            fetch(`${API}/reviews/summarize`, {
+            fetch(apiEndpoint("reviews/summarize"), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(currentPayload),
             }),
-            fetch(`${API}/reviews/summarize`, {
+            fetch(apiEndpoint("reviews/summarize"), {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify(comparePayload),
