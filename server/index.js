@@ -716,3 +716,18 @@ process.on("unhandledRejection", (reason, promise) => {
   console.error("[Server] Unhandled Rejection at:", promise, "reason:", reason);
   // Don't exit - keep server running
 });
+
+// Export for Vercel serverless functions
+export default app;
+
+// For local development: start the server
+// Only start if not running as a Vercel serverless function
+const isVercel = process.env.VERCEL || process.env.VERCEL_ENV;
+if (!isVercel) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`[Server] Running on http://localhost:${PORT}`);
+    console.log(`[Server] Gemini AI: ${ai ? "✓ Initialized" : "✗ Not available"}`);
+    console.log(`[Server] YellowCake: ${EXTRACT_API_KEY ? "✓ Available" : "✗ Not configured"}`);
+  });
+}
