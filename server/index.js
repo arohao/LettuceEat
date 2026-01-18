@@ -178,4 +178,145 @@ app.post("/review", async (req, res) => {
   }
 });
 
+// app.post("/reviews/summarize", async (req, res) => {
+//   const { restaurantName, reviews } = req.body || {};
+
+//   // Basic validation
+//   if (!Array.isArray(reviews) || reviews.length === 0) {
+//     return res.status(400).json({
+//       error: "Missing or invalid reviews. Expected an array of strings.",
+//     });
+//   }
+
+//   // Keep it safe + avoid huge prompts
+//   const cleaned = reviews
+//     .filter((r) => typeof r === "string")
+//     .map((r) => r.trim())
+//     .filter(Boolean)
+//     .slice(0, 60); // cap count (adjust as you like)
+
+//   if (cleaned.length === 0) {
+//     return res.status(400).json({ error: "No valid review strings provided." });
+//   }
+
+//   // Optional: cap total characters to prevent very large payloads
+//   const MAX_CHARS = 8000;
+//   let joined = cleaned.map((r) => `- ${r}`).join("\n");
+//   if (joined.length > MAX_CHARS) joined = joined.slice(0, MAX_CHARS);
+
+//   const prompt = `
+// You are a concise restaurant review summarizer.
+
+// ${restaurantName ? `Restaurant: ${restaurantName}` : ""}
+
+// Reviews:
+// ${joined}
+
+// Instructions:
+// - Summarize what the reviews are saying in EXACTLY 3 sentences total.
+// - Capture the most common themes (pros/cons), overall sentiment, and any notable caveats.
+// - Do not use bullet points, lists, headings, or emojis.
+// - Do not mention being an AI.
+//   `.trim();
+
+//   try {
+//     const response = await ai.models.generateContent({
+//       model: "gemini-3-flash-preview",
+//       contents: prompt,
+//     });
+
+//     const summary = (response.text || "").trim();
+//     console.log("Generated summary:", summary);
+
+//     return res.json({
+//       summary
+//     });
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({ error: "Gemini request failed" });
+//   }
+// });
+
+app.post("/reviews/summarize", async (req, res) => {
+  const { restaurantName, positiveReviews, negativeReviews } = req.body || {};
+
+  if (!Array.isArray(positiveReviews) || positiveReviews.length === 0) {
+    return res.status(400).json({
+      error: "Missing or invalid positiveReviews. Expected an array of strings.",
+    });
+  }
+
+  if (!Array.isArray(negativeReviews) || negativeReviews.length === 0) {
+    return res.status(400).json({
+      error: "Missing or invalid negativeReviews. Expected an array of strings.",
+    });
+  }
+
+  const cleanList = (arr) =>
+    arr
+      .filter((r) => typeof r === "string")
+      .map((r) => r.trim())
+      .filter(Boolean)
+      .slice(0, 10); // safety cap
+
+  const pos = cleanList(positiveReviews);
+  const neg = cleanList(negativeReviews);
+
+  if (pos.length === 0 || neg.length === 0) {
+    return res.status(400).json({ error: "No valid review strings provided." });
+  }
+
+  const prompt = `
+You are a concise restaurant review summarizer.
+
+${restaurantName ? `Restaurant: ${restaurantName}` : ""}
+
+Positive reviews:
+${pos.map((r) => `- ${r}`).join("\n")}
+
+Negative reviews:
+${neg.map((r) => `- ${r}`).join("\n")}
+
+Instructions:
+- Write 1 short sentence summarizing the positive reviews.
+- Write 1 short sentence summarizing the negative reviews.
+- Keep each sentence under 20 words.
+- No bullet points, no headings, no emojis.
+- Do not mention being an AI.
+- Return EXACT JSON with keys: positiveSummary, negativeSummary.
+`.trim();
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
+
+    const raw = (response.text || "").trim();
+
+    // Try to parse model output as JSON (robustly)
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // If the model wraps JSON with extra text, extract the first {...}
+      const match = raw.match(/\{[\s\S]*\}/);
+      if (match) parsed = JSON.parse(match[0]);
+    }
+
+    if (!parsed || typeof parsed !== "object") {
+      return res.status(500).json({ error: "Model returned invalid JSON", raw });
+    }
+
+    return res.json({
+      positiveSummary: String(parsed.positiveSummary || "").trim(),
+      negativeSummary: String(parsed.negativeSummary || "").trim(),
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Gemini request failed" });
+  }
+});
+
+
 app.listen(3000, () => console.log("Server running on http://localhost:3000"));
