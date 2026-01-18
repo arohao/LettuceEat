@@ -4,13 +4,13 @@
 The frontend now uses a centralized API configuration that connects to your Vercel backend.
 
 ## Backend URL
-Your backend is deployed at: `https://u-otta-hack8-one.vercel.app/`
+Your backend is deployed at: `https://lettuceleafserver.onrender.com/`
 
 ## Configuration
 
 ### Automatic Configuration
 The code automatically uses:
-- **Production**: `https://u-otta-hack8-one.vercel.app`
+- **Production**: `https://lettuceleafserver.onrender.com`
 - **Development**: `http://localhost:3000`
 
 ### Custom Configuration (Optional)
@@ -18,7 +18,7 @@ If you need to override the API URL, create or update `ui/.env`:
 
 ```env
 # For production (if you want to override)
-VITE_API_URL=https://u-otta-hack8-one.vercel.app
+VITE_API_URL=https://lettuceleafserver.onrender.com
 
 # For local development (if your backend is on a different port)
 VITE_API_URL=http://localhost:3000
@@ -37,8 +37,8 @@ All API calls now use the centralized configuration:
 import { apiEndpoint } from "@/lib/apiConfig";
 
 // Instead of hardcoding URLs:
-fetch(apiEndpoint("review"))  // → https://u-otta-hack8-one.vercel.app/review
-fetch(apiEndpoint("zapier/webhook"))  // → https://u-otta-hack8-one.vercel.app/zapier/webhook
+fetch(apiEndpoint("review"))  // → https://lettuceleafserver.onrender.com/review
+fetch(apiEndpoint("zapier/webhook"))  // → https://lettuceleafserver.onrender.com/zapier/webhook
 ```
 
 ## Testing

@@ -1,7 +1,7 @@
 /**
  * Centralized API configuration
  * 
- * Set VITE_API_URL in your .env file, or it will use the default Vercel URL
+ * Set VITE_API_URL in your .env file, or it will use the default Render URL
  * For local development, set VITE_API_URL=http://localhost:3000
  */
 
@@ -11,9 +11,9 @@ const getApiUrl = (): string => {
     return import.meta.env.VITE_API_URL;
   }
   
-  // Production: use Vercel backend
+  // Production: use Render backend
   if (import.meta.env.PROD) {
-    return "https://u-otta-hack8-one.vercel.app";
+    return "https://lettuceleafserver.onrender.com";
   }
   
   // Development: use localhost
