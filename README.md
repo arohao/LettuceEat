@@ -1,3 +1,5 @@
+<img width="765" height="432" alt="Screenshot 2026-01-19 at 12 48 42 PM" src="https://github.com/user-attachments/assets/549cf97f-84e8-44ea-bcbf-78e7dcc7e6cf" />
+
 ** (Note: we may have run out of Gemini and YellowCake tokens) **
 
 ## Inspiration 🥬
