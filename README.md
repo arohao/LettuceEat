@@ -1,5 +1,7 @@
 <img width="765" height="432" alt="Screenshot 2026-01-19 at 12 48 42 PM" src="https://github.com/user-attachments/assets/549cf97f-84e8-44ea-bcbf-78e7dcc7e6cf" />
 
+View a video demo [here](https://devpost.com/software/lettuceeat-clb6ve?_gl=1*x6b0h3*_gcl_au*MTYwMTY3NjY4Mi4xNzY3OTE4NDk2*_ga*NDU3ODU2MzM0LjE3Njc5MTg0OTY.*_ga_0YHJK3Y10M*czE3Njg5MzgwMzkkbzE5JGcxJHQxNzY4OTM4MDQyJGo1NyRsMCRoMA..)!
+
 ** (Note: we may have run out of Gemini and YellowCake tokens) **
 
 ## Inspiration 🥬
